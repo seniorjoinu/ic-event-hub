@@ -1,0 +1,9 @@
+[package]
+name = "event_hub"
+version = "0.1.0"
+authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+ic-cdk = "0.3.0"
+serde = "1.0.126"

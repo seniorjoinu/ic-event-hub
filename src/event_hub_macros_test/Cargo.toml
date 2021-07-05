@@ -1,0 +1,12 @@
+[package]
+name = "event_hub_macros_test"
+version = "0.1.0"
+authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+ic-cdk = "0.3.0"
+ic-cdk-macros = "0.3.0"
+serde = "1.0.126"
+event_hub = { path = "../event_hub" }
+event_hub_macros = { path = "../event_hub_macros" }

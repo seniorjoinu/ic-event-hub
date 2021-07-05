@@ -1,0 +1,15 @@
+[package]
+name = "event_hub_macros"
+version = "0.1.0"
+authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+path = "lib.rs"
+
+[dependencies]
+syn = "1.0.73"
+quote = "1.0.9"
+proc-macro2 = "1.0.27"
+event_hub = { path = "../event_hub" }
