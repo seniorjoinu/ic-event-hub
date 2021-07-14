@@ -179,15 +179,6 @@ pub struct GetEventListenersPayload {
     pub filters: Vec<EventFilter>,
 }
 
-/*
-   Implements event-hub functionality for current canister.
-   Adds canister methods:
-    "add_event_listener" : (vec EventListener) -> ();
-    "get_event_listeners" : (vec EventFilter) -> (vec vec RemoteCallEndpoint) query;
-    "get_certified_event_listeners" : (vec EventFilter) -> (vec vec RemoteCallEndpoint);
-
-    Adds helper function "emit(impl IEvent)" which propagates the event to all the listeners.
-*/
 #[macro_export]
 macro_rules! implement_event_emitter {
     () => {
@@ -202,62 +193,6 @@ macro_rules! implement_event_emitter {
                     get_event_hub()
                 }
             }
-        }
-
-        #[ic_cdk_macros::update]
-        fn add_event_listeners(
-            payload: event_hub::AddEventListenersPayload
-        ) {
-            //union_utils::fns::log("event_hub.add_event_listeners()");
-
-            let hub = get_event_hub();
-
-            for listener in payload.listeners.into_iter() {
-                hub.add_event_listener(
-                    listener.filter,
-                    listener.callback_method_name,
-                    ic_cdk::caller(),
-                );
-            }
-        }
-
-        #[ic_cdk_macros::update]
-        fn remove_event_listeners(
-            payload: event_hub::RemoveEventListenersPayload
-        ) -> Vec<Result<(), String>> {
-            //union_utils::fns::log("event_hub.remove_event_listeners()");
-
-            let hub = get_event_hub();
-            let mut result = vec![];
-
-            for f_m in payload.filters_and_method_names.into_iter() {
-                result.push(hub.remove_event_listener(&f_m.filter, f_m.method_name, ic_cdk::caller()));
-            }
-
-            result
-        }
-
-        #[ic_cdk_macros::query]
-        fn get_event_listeners(
-            payload: event_hub::GetEventListenersPayload
-        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
-            //union_utils::fns::log("event_hub.get_event_listeners()");
-
-            let hub = get_event_hub();
-            let mut res = vec![];
-
-            for filter in payload.filters.iter() {
-                res.push(hub.match_event_listeners(filter));
-            }
-
-            res
-        }
-
-        #[ic_cdk_macros::update]
-        fn get_certified_event_listeners(
-            payload: event_hub::GetEventListenersPayload
-        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
-            get_event_listeners(payload)
         }
 
         #[allow(unused_must_use)]
@@ -283,5 +218,135 @@ macro_rules! implement_event_emitter {
                 );
             }
         }
+    }
+}
+
+#[macro_export]
+macro_rules! implement_add_event_listeners {
+    (guard = $guard:literal) => {
+        #[ic_cdk_macros::update(guard = $guard)]
+        fn add_event_listeners(
+            payload: event_hub::AddEventListenersPayload
+        ) {
+            //union_utils::fns::log("event_hub.add_event_listeners()");
+
+            let hub = get_event_hub();
+
+            for listener in payload.listeners.into_iter() {
+                hub.add_event_listener(
+                    listener.filter,
+                    listener.callback_method_name,
+                    ic_cdk::caller(),
+                );
+            }
+        }
     };
+    () => {
+        #[ic_cdk_macros::update]
+        fn add_event_listeners(
+            payload: event_hub::AddEventListenersPayload
+        ) {
+            //union_utils::fns::log("event_hub.add_event_listeners()");
+
+            let hub = get_event_hub();
+
+            for listener in payload.listeners.into_iter() {
+                hub.add_event_listener(
+                    listener.filter,
+                    listener.callback_method_name,
+                    ic_cdk::caller(),
+                );
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! implement_remove_event_listeners {
+    (guard = $guard:literal) => {
+        #[ic_cdk_macros::update(guard = $guard)]
+        fn remove_event_listeners(
+            payload: event_hub::RemoveEventListenersPayload
+        ) -> Vec<Result<(), String>> {
+            //union_utils::fns::log("event_hub.remove_event_listeners()");
+
+            let hub = get_event_hub();
+            let mut result = vec![];
+
+            for f_m in payload.filters_and_method_names.into_iter() {
+                result.push(hub.remove_event_listener(&f_m.filter, f_m.method_name, ic_cdk::caller()));
+            }
+
+            result
+        }
+    };
+    () => {
+        #[ic_cdk_macros::update]
+        fn remove_event_listeners(
+            payload: event_hub::RemoveEventListenersPayload
+        ) -> Vec<Result<(), String>> {
+            //union_utils::fns::log("event_hub.remove_event_listeners()");
+
+            let hub = get_event_hub();
+            let mut result = vec![];
+
+            for f_m in payload.filters_and_method_names.into_iter() {
+                result.push(hub.remove_event_listener(&f_m.filter, f_m.method_name, ic_cdk::caller()));
+            }
+
+            result
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! implement_get_event_listeners {
+    (guard = $guard:literal) => {
+        #[ic_cdk_macros::query(guard = $guard)]
+        fn get_event_listeners(
+            payload: event_hub::GetEventListenersPayload
+        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
+            //union_utils::fns::log("event_hub.get_event_listeners()");
+
+            let hub = get_event_hub();
+            let mut res = vec![];
+
+            for filter in payload.filters.iter() {
+                res.push(hub.match_event_listeners(filter));
+            }
+
+            res
+        }
+
+        #[ic_cdk_macros::update(guard = stringify!($guard))]
+        fn get_certified_event_listeners(
+            payload: event_hub::GetEventListenersPayload
+        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
+            get_event_listeners(payload)
+        }
+    };
+    () => {
+        #[ic_cdk_macros::query]
+        fn get_event_listeners(
+            payload: event_hub::GetEventListenersPayload
+        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
+            //union_utils::fns::log("event_hub.get_event_listeners()");
+
+            let hub = get_event_hub();
+            let mut res = vec![];
+
+            for filter in payload.filters.iter() {
+                res.push(hub.match_event_listeners(filter));
+            }
+
+            res
+        }
+
+        #[ic_cdk_macros::update]
+        fn get_certified_event_listeners(
+            payload: event_hub::GetEventListenersPayload
+        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
+            get_event_listeners(payload)
+        }
+    }
 }

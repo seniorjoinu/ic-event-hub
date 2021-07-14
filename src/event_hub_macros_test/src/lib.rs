@@ -1,9 +1,23 @@
 #[cfg(test)]
 mod tests {
-    use event_hub::{IEvent, IEventFilter, implement_event_emitter};
+    use event_hub::{
+        IEvent,
+        IEventFilter,
+        implement_add_event_listeners,
+        implement_event_emitter,
+        implement_get_event_listeners,
+        implement_remove_event_listeners,
+    };
     use event_hub_macros::{Event, EventFilter};
 
     implement_event_emitter!();
+    implement_get_event_listeners!();
+    implement_add_event_listeners!();
+    implement_remove_event_listeners!(guard = "g");
+
+    fn g() -> Result<(), String> {
+        Ok(())
+    }
 
     #[derive(Event, Debug, PartialEq, Eq)]
     struct TestEvent {
