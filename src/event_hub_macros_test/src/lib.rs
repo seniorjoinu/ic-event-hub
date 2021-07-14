@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use event_hub::{IEvent, IEventFilter};
+    use event_hub::{IEvent, IEventFilter, implement_event_emitter};
     use event_hub_macros::{Event, EventFilter};
+
+    implement_event_emitter!();
 
     #[derive(Event, Debug, PartialEq, Eq)]
     struct TestEvent {
