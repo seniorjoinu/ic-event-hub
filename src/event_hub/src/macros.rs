@@ -136,13 +136,6 @@ macro_rules! implement_get_event_listeners {
 
             res
         }
-
-        #[ic_cdk_macros::update(guard = stringify!($guard))]
-        fn get_certified_event_listeners(
-            payload: event_hub::GetEventListenersPayload
-        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
-            get_event_listeners(payload)
-        }
     };
     () => {
         #[ic_cdk_macros::query]
@@ -159,13 +152,6 @@ macro_rules! implement_get_event_listeners {
             }
 
             res
-        }
-
-        #[ic_cdk_macros::update]
-        fn get_certified_event_listeners(
-            payload: event_hub::GetEventListenersPayload
-        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
-            get_event_listeners(payload)
         }
     }
 }
