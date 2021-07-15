@@ -44,6 +44,12 @@ pub struct EventListener {
     pub callback_method_name: String,
 }
 
+#[derive(CandidType, Deserialize)]
+pub struct EventListenerExt {
+    pub filter: EventFilter,
+    pub endpoint: RemoteCallEndpoint,
+}
+
 #[derive(Default)]
 pub struct EventHub(BTreeMap<EventFilter, HashSet<RemoteCallEndpoint>>);
 
@@ -74,7 +80,7 @@ impl EventHub {
     ) -> Vec<RemoteCallEndpoint> {
         self.0
             .iter()
-            .filter(|&entry| entry.0.0.is_subset(topics))
+            .filter(|&entry| entry.0 .0.is_subset(topics))
             .map(|entry| entry.1.clone())
             .flatten()
             .collect()
@@ -86,9 +92,10 @@ impl EventHub {
         event_listener_method_name: String,
         caller: Principal,
     ) -> Result<(), String> {
-        let listeners = self.0
+        let listeners = self
+            .0
             .get_mut(filter)
-            .ok_or(String::from("No such filter"))?;
+            .ok_or_else(|| String::from("No such filter"))?;
 
         let listener_to_remove = RemoteCallEndpoint {
             canister_id: caller,
@@ -119,7 +126,7 @@ pub async fn listen(
     let filter = _filter.to_event_filter();
 
     let res: CallResult<()> =
-        ic_cdk::api::call::call(emitter, callback_name.as_str(), (filter, )).await;
+        ic_cdk::api::call::call(emitter, callback_name.as_str(), (filter,)).await;
 
     if let Err(err) = res {
         return Err(err.1);
@@ -146,11 +153,7 @@ pub async fn listen_many(
         let cb = callback_names[i].as_str();
         let filter = filter.to_event_filter();
 
-        let res: CallResult<()> = ic_cdk::api::call::call(
-            emitter,
-            cb,
-            (filter, ),
-        ).await;
+        let res: CallResult<()> = ic_cdk::api::call::call(emitter, cb, (filter,)).await;
 
         if let Err(err) = res {
             return Err(err.1);
@@ -162,6 +165,11 @@ pub async fn listen_many(
 
 #[derive(CandidType, Deserialize)]
 pub struct AddEventListenersPayload {
+    pub listeners: Vec<EventListenerExt>,
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct BecomeEventListenerPayload {
     pub listeners: Vec<EventListener>,
 }
 
