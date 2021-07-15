@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "src/event_hub",
-    "src/event_hub_macros",
-    "src/event_hub_macros_test"
+    "src/ic_event_hub",
+    "src/ic_event_hub_macros",
+    "src/ic_event_hub_test"
 ]

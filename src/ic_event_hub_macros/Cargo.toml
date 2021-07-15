@@ -1,5 +1,5 @@
 [package]
-name = "event_hub_macros"
+name = "ic-event-hub-macros"
 version = "0.1.0"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
@@ -12,4 +12,3 @@ path = "lib.rs"
 syn = "1.0.73"
 quote = "1.0.9"
 proc-macro2 = "1.0.27"
-event_hub = { path = "../event_hub" }

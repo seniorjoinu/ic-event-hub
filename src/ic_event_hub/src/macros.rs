@@ -1,22 +1,22 @@
 #[macro_export]
 macro_rules! implement_event_emitter {
     () => {
-        static mut _EVENT_HUB: Option<event_hub::EventHub> = None;
+        static mut _EVENT_HUB: Option<ic_event_hub::EventHub> = None;
 
-        pub fn get_event_hub() -> &'static mut event_hub::EventHub {
+        pub fn get_event_hub() -> &'static mut ic_event_hub::EventHub {
             unsafe {
                 if let Some(s) = &mut _EVENT_HUB {
                     s
                 } else {
-                    _EVENT_HUB = Some(event_hub::EventHub::default());
+                    _EVENT_HUB = Some(ic_event_hub::EventHub::default());
                     get_event_hub()
                 }
             }
         }
 
         #[allow(unused_must_use)]
-        pub fn emit(_event: impl event_hub::IEvent) {
-            //union_utils::fns::log("event_hub.emit()");
+        pub fn emit(_event: impl ic_event_hub::IEvent) {
+            //union_utils::fns::log("ic_event_hub.emit()");
 
             let event = _event.to_event();
             let hub = get_event_hub();
@@ -45,9 +45,9 @@ macro_rules! implement_add_event_listeners {
     (guard = $guard:literal) => {
         #[ic_cdk_macros::update(guard = $guard)]
         fn add_event_listeners(
-            payload: event_hub::AddEventListenersPayload
+            payload: ic_event_hub::AddEventListenersPayload
         ) {
-            //union_utils::fns::log("event_hub.add_event_listeners()");
+            //union_utils::fns::log("ic_event_hub.add_event_listeners()");
 
             let hub = get_event_hub();
 
@@ -63,9 +63,9 @@ macro_rules! implement_add_event_listeners {
     () => {
         #[ic_cdk_macros::update]
         fn add_event_listeners(
-            payload: event_hub::AddEventListenersPayload
+            payload: ic_event_hub::AddEventListenersPayload
         ) {
-            //union_utils::fns::log("event_hub.add_event_listeners()");
+            //union_utils::fns::log("ic_event_hub.add_event_listeners()");
 
             let hub = get_event_hub();
 
@@ -85,9 +85,9 @@ macro_rules! implement_remove_event_listeners {
     (guard = $guard:literal) => {
         #[ic_cdk_macros::update(guard = $guard)]
         fn remove_event_listeners(
-            payload: event_hub::RemoveEventListenersPayload
+            payload: ic_event_hub::RemoveEventListenersPayload
         ) -> Vec<Result<(), String>> {
-            //union_utils::fns::log("event_hub.remove_event_listeners()");
+            //union_utils::fns::log("ic_event_hub.remove_event_listeners()");
 
             let hub = get_event_hub();
             let mut result = vec![];
@@ -102,9 +102,9 @@ macro_rules! implement_remove_event_listeners {
     () => {
         #[ic_cdk_macros::update]
         fn remove_event_listeners(
-            payload: event_hub::RemoveEventListenersPayload
+            payload: ic_event_hub::RemoveEventListenersPayload
         ) -> Vec<Result<(), String>> {
-            //union_utils::fns::log("event_hub.remove_event_listeners()");
+            //union_utils::fns::log("ic_event_hub.remove_event_listeners()");
 
             let hub = get_event_hub();
             let mut result = vec![];
@@ -123,9 +123,9 @@ macro_rules! implement_get_event_listeners {
     (guard = $guard:literal) => {
         #[ic_cdk_macros::query(guard = $guard)]
         fn get_event_listeners(
-            payload: event_hub::GetEventListenersPayload
-        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
-            //union_utils::fns::log("event_hub.get_event_listeners()");
+            payload: ic_event_hub::GetEventListenersPayload
+        ) -> Vec<Vec<ic_event_hub::RemoteCallEndpoint>> {
+            //union_utils::fns::log("ic_event_hub.get_event_listeners()");
 
             let hub = get_event_hub();
             let mut res = vec![];
@@ -140,9 +140,9 @@ macro_rules! implement_get_event_listeners {
     () => {
         #[ic_cdk_macros::query]
         fn get_event_listeners(
-            payload: event_hub::GetEventListenersPayload
-        ) -> Vec<Vec<event_hub::RemoteCallEndpoint>> {
-            //union_utils::fns::log("event_hub.get_event_listeners()");
+            payload: ic_event_hub::GetEventListenersPayload
+        ) -> Vec<Vec<ic_event_hub::RemoteCallEndpoint>> {
+            //union_utils::fns::log("ic_event_hub.get_event_listeners()");
 
             let hub = get_event_hub();
             let mut res = vec![];

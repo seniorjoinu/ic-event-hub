@@ -1,5 +1,5 @@
 [package]
-name = "event_hub_macros_test"
+name = "ic-event-hub-test"
 version = "0.1.0"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
@@ -8,5 +8,5 @@ edition = "2018"
 ic-cdk = "0.3.0"
 ic-cdk-macros = "0.3.0"
 serde = "1.0.126"
-event_hub = { path = "../event_hub" }
-event_hub_macros = { path = "../event_hub_macros" }
+ic-event-hub = { path = "../ic_event_hub" }
+ic-event-hub-macros = { path = "../ic_event_hub_macros" }

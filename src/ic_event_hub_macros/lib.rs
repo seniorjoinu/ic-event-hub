@@ -47,7 +47,7 @@ pub fn event_macro_derive(input: TokenStream) -> TokenStream {
     // Transform the marked elements into new struct fields
     let topics_ser = topics.iter().fold(quote!(), |es, (field, field_name)| {
         quote! {
-            #es res.insert(event_hub::EventField {
+            #es res.insert(ic_event_hub::EventField {
                 name: String::from(#field_name),
                 value: ic_cdk::export::candid::encode_one(&self.#field).unwrap()
             });
@@ -62,7 +62,7 @@ pub fn event_macro_derive(input: TokenStream) -> TokenStream {
 
     let values_ser = values.iter().fold(quote!(), |es, (field, field_name)| {
         quote! {
-            #es event_hub::EventField {
+            #es ic_event_hub::EventField {
                 name: String::from(#field_name),
                 value: ic_cdk::export::candid::encode_one(&self.#field).unwrap()
             },
@@ -77,26 +77,26 @@ pub fn event_macro_derive(input: TokenStream) -> TokenStream {
 
     // Create the new structure
     let gen = quote! {
-        impl event_hub::IEvent for #name {
-             fn to_event(&self) -> event_hub::Event {
+        impl ic_event_hub::IEvent for #name {
+             fn to_event(&self) -> ic_event_hub::Event {
                 let mut res = std::collections::BTreeSet::new();
-                res.insert(event_hub::EventField {
-                    name: String::from(event_hub::EVENT_NAME_FIELD),
+                res.insert(ic_event_hub::EventField {
+                    name: String::from(ic_event_hub::EVENT_NAME_FIELD),
                     value: ic_cdk::export::candid::encode_one(#name_str).unwrap()
                 });
                 #topics_ser
 
-                event_hub::Event {
+                ic_event_hub::Event {
                     topics: res,
                     values: vec![#values_ser],
                 }
             }
 
-            fn from_event(event: event_hub::Event) -> Self {
+            fn from_event(event: ic_event_hub::Event) -> Self {
                 let fields: std::collections::HashMap<String, Vec<u8>> = event
                     .topics
                     .into_iter()
-                    .filter(|topic| topic.name != *event_hub::EVENT_NAME_FIELD)
+                    .filter(|topic| topic.name != *ic_event_hub::EVENT_NAME_FIELD)
                     .chain(event.values.into_iter())
                     .map(|field| (field.name, field.value))
                     .collect();
@@ -153,7 +153,7 @@ pub fn event_filter_macro_derive(input: TokenStream) -> TokenStream {
     // Transform the marked elements into new struct fields
     let topics_ser = topics.iter().fold(quote!(), |es, (field, field_name)| {
         quote! {
-            #es res.insert(event_hub::EventField {
+            #es res.insert(ic_event_hub::EventField {
                 name: String::from(#field_name),
                 value: ic_cdk::export::candid::encode_one(&self.#field).unwrap()
             });
@@ -167,23 +167,23 @@ pub fn event_filter_macro_derive(input: TokenStream) -> TokenStream {
     });
 
     let gen = quote! {
-        impl event_hub::IEventFilter for #name {
-             fn to_event_filter(&self) -> event_hub::EventFilter {
+        impl ic_event_hub::IEventFilter for #name {
+             fn to_event_filter(&self) -> ic_event_hub::EventFilter {
                 let mut res = std::collections::BTreeSet::new();
-                res.insert(event_hub::EventField {
-                    name: String::from(event_hub::EVENT_NAME_FIELD),
+                res.insert(ic_event_hub::EventField {
+                    name: String::from(ic_event_hub::EVENT_NAME_FIELD),
                     value: ic_cdk::export::candid::encode_one(#event_name).unwrap()
                 });
                 #topics_ser
 
-                event_hub::EventFilter(res)
+                ic_event_hub::EventFilter(res)
             }
 
-            fn from_event_filter(filter: event_hub::EventFilter) -> Self {
+            fn from_event_filter(filter: ic_event_hub::EventFilter) -> Self {
                 let fields: std::collections::HashMap<String, Vec<u8>> = filter
                     .0
                     .into_iter()
-                    .filter(|topic| topic.name != *event_hub::EVENT_NAME_FIELD)
+                    .filter(|topic| topic.name != *ic_event_hub::EVENT_NAME_FIELD)
                     .map(|field| (field.name, field.value))
                     .collect();
 
