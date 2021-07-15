@@ -3,6 +3,8 @@ name = "ic-event-hub"
 version = "0.1.0"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
+description = "event hub"
+license = "MIT"
 
 [dependencies]
 ic-cdk = "0.3.0"
