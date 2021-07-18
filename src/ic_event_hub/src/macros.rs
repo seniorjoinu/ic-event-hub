@@ -45,8 +45,6 @@ macro_rules! implement_add_event_listeners {
     (guard = $guard:literal) => {
         #[ic_cdk_macros::update(guard = $guard)]
         fn add_event_listeners(payload: ic_event_hub::AddEventListenersPayload) {
-            //union_utils::fns::log("ic_event_hub.add_event_listeners()");
-
             let hub = get_event_hub();
 
             for listener in payload.listeners.into_iter() {
@@ -61,8 +59,6 @@ macro_rules! implement_add_event_listeners {
     () => {
         #[ic_cdk_macros::update]
         fn add_event_listeners(payload: ic_event_hub::AddEventListenersPayload) {
-            //union_utils::fns::log("ic_event_hub.add_event_listeners()");
-
             let hub = get_event_hub();
 
             for listener in payload.listeners.into_iter() {
@@ -77,12 +73,52 @@ macro_rules! implement_add_event_listeners {
 }
 
 #[macro_export]
+macro_rules! implement_remove_event_listeners {
+    (guard = $guard:literal) => {
+        #[ic_cdk_macros::update(guard = $guard)]
+        fn remove_event_listeners(
+            payload: ic_event_hub::AddEventListenersPayload,
+        ) -> Vec<Result<(), String>> {
+            let hub = get_event_hub();
+            let mut result = vec![];
+
+            for listener in payload.listeners.into_iter() {
+                result.push(hub.remove_event_listener(
+                    &listener.filter,
+                    listener.endpoint.method_name,
+                    listener.endpoint.canister_id,
+                ));
+            }
+
+            result
+        }
+    };
+    () => {
+        #[ic_cdk_macros::update]
+        fn remove_event_listeners(
+            payload: ic_event_hub::AddEventListenersPayload,
+        ) -> Vec<Result<(), String>> {
+            let hub = get_event_hub();
+            let mut result = vec![];
+
+            for listener in payload.listeners.into_iter() {
+                result.push(hub.remove_event_listener(
+                    &listener.filter,
+                    listener.endpoint.method_name,
+                    listener.endpoint.canister_id,
+                ));
+            }
+
+            result
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! implement_become_event_listener {
     (guard = $guard:literal) => {
         #[ic_cdk_macros::update(guard = $guard)]
         fn become_event_listener(payload: ic_event_hub::BecomeEventListenerPayload) {
-            //union_utils::fns::log("ic_event_hub.become_event_listener()");
-
             let hub = get_event_hub();
 
             for listener in payload.listeners.into_iter() {
@@ -97,8 +133,6 @@ macro_rules! implement_become_event_listener {
     () => {
         #[ic_cdk_macros::update]
         fn become_event_listener(payload: ic_event_hub::BecomeEventListenerPayload) {
-            //union_utils::fns::log("ic_event_hub.become_event_listener()");
-
             let hub = get_event_hub();
 
             for listener in payload.listeners.into_iter() {
@@ -113,21 +147,19 @@ macro_rules! implement_become_event_listener {
 }
 
 #[macro_export]
-macro_rules! implement_remove_event_listeners {
+macro_rules! implement_stop_being_event_listener {
     (guard = $guard:literal) => {
         #[ic_cdk_macros::update(guard = $guard)]
-        fn remove_event_listeners(
-            payload: ic_event_hub::RemoveEventListenersPayload,
+        fn stop_being_event_listener(
+            payload: ic_event_hub::BecomeEventListenerPayload,
         ) -> Vec<Result<(), String>> {
-            //union_utils::fns::log("ic_event_hub.remove_event_listeners()");
-
             let hub = get_event_hub();
             let mut result = vec![];
 
-            for f_m in payload.filters_and_method_names.into_iter() {
+            for listener in payload.listeners.into_iter() {
                 result.push(hub.remove_event_listener(
-                    &f_m.filter,
-                    f_m.method_name,
+                    &listener.filter,
+                    listener.callback_method_name,
                     ic_cdk::caller(),
                 ));
             }
@@ -137,18 +169,16 @@ macro_rules! implement_remove_event_listeners {
     };
     () => {
         #[ic_cdk_macros::update]
-        fn remove_event_listeners(
-            payload: ic_event_hub::RemoveEventListenersPayload,
+        fn stop_being_event_listener(
+            payload: ic_event_hub::BecomeEventListenerPayload,
         ) -> Vec<Result<(), String>> {
-            //union_utils::fns::log("ic_event_hub.remove_event_listeners()");
-
             let hub = get_event_hub();
             let mut result = vec![];
 
-            for f_m in payload.filters_and_method_names.into_iter() {
+            for listener in payload.listeners.into_iter() {
                 result.push(hub.remove_event_listener(
-                    &f_m.filter,
-                    f_m.method_name,
+                    &listener.filter,
+                    listener.callback_method_name,
                     ic_cdk::caller(),
                 ));
             }
@@ -165,8 +195,6 @@ macro_rules! implement_get_event_listeners {
         fn get_event_listeners(
             payload: ic_event_hub::GetEventListenersPayload,
         ) -> Vec<Vec<ic_event_hub::RemoteCallEndpoint>> {
-            //union_utils::fns::log("ic_event_hub.get_event_listeners()");
-
             let hub = get_event_hub();
             let mut res = vec![];
 
@@ -182,8 +210,6 @@ macro_rules! implement_get_event_listeners {
         fn get_event_listeners(
             payload: ic_event_hub::GetEventListenersPayload,
         ) -> Vec<Vec<ic_event_hub::RemoteCallEndpoint>> {
-            //union_utils::fns::log("ic_event_hub.get_event_listeners()");
-
             let hub = get_event_hub();
             let mut res = vec![];
 

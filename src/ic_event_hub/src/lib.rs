@@ -174,17 +174,6 @@ pub struct BecomeEventListenerPayload {
 }
 
 #[derive(CandidType, Deserialize)]
-pub struct FilterAndMethodName {
-    pub filter: EventFilter,
-    pub method_name: String,
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct RemoveEventListenersPayload {
-    pub filters_and_method_names: Vec<FilterAndMethodName>,
-}
-
-#[derive(CandidType, Deserialize)]
 pub struct GetEventListenersPayload {
     pub filters: Vec<EventFilter>,
 }

@@ -2,15 +2,17 @@
 mod tests {
     use ic_event_hub::{
         implement_add_event_listeners, implement_become_event_listener, implement_event_emitter,
-        implement_get_event_listeners, implement_remove_event_listeners, IEvent, IEventFilter,
+        implement_get_event_listeners, implement_remove_event_listeners,
+        implement_stop_being_event_listener, IEvent, IEventFilter,
     };
     use ic_event_hub_macros::Event;
 
     implement_event_emitter!();
     implement_get_event_listeners!();
     implement_add_event_listeners!();
-    implement_become_event_listener!();
     implement_remove_event_listeners!(guard = "g");
+    implement_become_event_listener!();
+    implement_stop_being_event_listener!();
 
     fn g() -> Result<(), String> {
         Ok(())
