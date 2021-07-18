@@ -4,7 +4,7 @@ mod tests {
         implement_add_event_listeners, implement_become_event_listener, implement_event_emitter,
         implement_get_event_listeners, implement_remove_event_listeners, IEvent, IEventFilter,
     };
-    use ic_event_hub_macros::{Event, EventFilter};
+    use ic_event_hub_macros::Event;
 
     implement_event_emitter!();
     implement_get_event_listeners!();
@@ -20,12 +20,6 @@ mod tests {
     struct TestEvent {
         pub a: u8,
         #[topic]
-        pub b: String,
-    }
-
-    #[derive(EventFilter, Debug, PartialEq, Eq)]
-    #[EventName = "TestEvent"]
-    struct TestEventFilter {
         pub b: String,
     }
 
@@ -45,12 +39,12 @@ mod tests {
     #[test]
     fn event_filters_serialization_works_fine() {
         let filter = TestEventFilter {
-            b: String::from("kek"),
+            b: Some(String::from("kek")),
         };
 
         let filter_ser = filter.to_event_filter();
         let filter_de = TestEventFilter::from_event_filter(filter_ser);
 
-        assert_eq!(filter, filter_de);
+        assert_eq!(filter.b, filter_de.b);
     }
 }
