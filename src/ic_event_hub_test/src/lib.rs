@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use ic_event_hub::{
+    use ic_event_hub::{IEvent, IEventFilter};
+    use ic_event_hub_macros::{
         implement_add_event_listeners, implement_become_event_listener, implement_event_emitter,
         implement_get_event_listeners, implement_remove_event_listeners,
-        implement_stop_being_event_listener, IEvent, IEventFilter,
+        implement_stop_being_event_listener, Event,
     };
-    use ic_event_hub_macros::Event;
 
     implement_event_emitter!();
     implement_get_event_listeners!();
-    implement_add_event_listeners!();
+    implement_add_event_listeners!(guard = "g");
     implement_remove_event_listeners!(guard = "g");
     implement_become_event_listener!();
     implement_stop_being_event_listener!();

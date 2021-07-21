@@ -1,11 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
-use ic_cdk::api::call::CallResult;
 use ic_cdk::export::candid::{CandidType, Deserialize, Principal};
+use ic_cdk::{caller, print};
 
-mod macros;
+pub mod api;
+
+// ------------ CONSTS ------------------
 
 pub const EVENT_NAME_FIELD: &str = "__event_name";
+
+// ------------ TYPES -------------------
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug, CandidType, Deserialize)]
 pub struct RemoteCallEndpoint {
@@ -49,6 +53,44 @@ pub struct EventListenerExt {
     pub filter: EventFilter,
     pub endpoint: RemoteCallEndpoint,
 }
+
+// ---------- API TYPES ---------------
+
+#[derive(CandidType, Deserialize)]
+pub struct AddEventListenersRequest {
+    pub listeners: Vec<EventListenerExt>,
+}
+
+pub type RemoveEventListenersRequest = AddEventListenersRequest;
+
+#[derive(CandidType, Deserialize)]
+pub struct RemoveEventListenersResponse {
+    pub results: Vec<Result<(), String>>,
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct BecomeEventListenerRequest {
+    pub listeners: Vec<EventListener>,
+}
+
+pub type StopBeingEventListenerRequest = BecomeEventListenerRequest;
+
+#[derive(CandidType, Deserialize)]
+pub struct StopBeingEventListenerResponse {
+    pub results: Vec<Result<(), String>>,
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct GetEventListenersRequest {
+    pub filters: Vec<EventFilter>,
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct GetEventListenersResponse {
+    pub listeners: Vec<Vec<RemoteCallEndpoint>>,
+}
+
+// --------------- EVENT HUB --------------
 
 #[derive(Default)]
 pub struct EventHub(BTreeMap<EventFilter, HashSet<RemoteCallEndpoint>>);
@@ -112,68 +154,8 @@ impl EventHub {
     }
 }
 
-/*
-   Attempts to create a subscription for events emitted from the [emitter] matching the [filter].
-   When events are emitted, they are sent to the listener and execute [callback_name].
+// ------------------- UTILS ----------------------
 
-   Multiple 'listens' with the same parameters have no effect.
-*/
-pub async fn listen(
-    emitter: Principal,
-    _filter: impl IEventFilter,
-    callback_name: String,
-) -> Result<(), String> {
-    let filter = _filter.to_event_filter();
-
-    let res: CallResult<()> =
-        ic_cdk::api::call::call(emitter, callback_name.as_str(), (filter,)).await;
-
-    if let Err(err) = res {
-        return Err(err.1);
-    }
-
-    Ok(())
-}
-
-/*
-   Attempts to create multiple subscriptions for events emitted from the [emitter] matching each of the [filters].
-   When events are emitted, they are sent to the listener and execute one of the [callback_names].
-   [filters] and [callback_names] should be provided with respect to their order.
-*/
-pub async fn listen_many(
-    emitter: Principal,
-    filters: Vec<impl IEventFilter>,
-    callback_names: Vec<String>,
-) -> Result<(), String> {
-    if filters.len() != callback_names.len() {
-        return Err(String::from("There are not as many filters as callbacks"));
-    }
-
-    for (i, filter) in filters.into_iter().enumerate() {
-        let cb = callback_names[i].as_str();
-        let filter = filter.to_event_filter();
-
-        let res: CallResult<()> = ic_cdk::api::call::call(emitter, cb, (filter,)).await;
-
-        if let Err(err) = res {
-            return Err(err.1);
-        }
-    }
-
-    Ok(())
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct AddEventListenersPayload {
-    pub listeners: Vec<EventListenerExt>,
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct BecomeEventListenerPayload {
-    pub listeners: Vec<EventListener>,
-}
-
-#[derive(CandidType, Deserialize)]
-pub struct GetEventListenersPayload {
-    pub filters: Vec<EventFilter>,
+pub fn log(msg: &str) {
+    print(format!("[caller: {}]: {}", caller(), msg))
 }
