@@ -20,7 +20,6 @@ pub fn implement_event_emitter_impl(_: TokenStream) -> TokenStream {
             }
         }
 
-        #[allow(unused_must_use)]
         pub fn emit(event: impl ic_event_hub::IEvent) {
             ic_event_hub::log("ic_event_hub.emit()");
 

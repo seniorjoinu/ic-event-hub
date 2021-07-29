@@ -33,9 +33,10 @@ mod tests {
         };
 
         let event_ser = event.to_event();
-        let event_de = TestEvent::from_event(event_ser);
+        let event_de = TestEvent::from_event(event_ser.clone());
 
         assert_eq!(event, event_de);
+        assert_eq!(event_ser.get_name(), String::from("TestEvent"));
     }
 
     #[test]

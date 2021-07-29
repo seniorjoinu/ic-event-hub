@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
-use ic_cdk::export::candid::{CandidType, Deserialize, Principal};
+use ic_cdk::export::candid::{decode_one, CandidType, Deserialize, Principal};
 use ic_cdk::{caller, print};
 
 pub mod api;
@@ -27,6 +27,20 @@ pub struct EventField {
 pub struct Event {
     pub topics: BTreeSet<EventField>,
     pub values: Vec<EventField>,
+}
+
+impl Event {
+    pub fn get_name(&self) -> String {
+        let encoded_name = self
+            .topics
+            .iter()
+            .find(|&field| field.name == EVENT_NAME_FIELD)
+            .cloned()
+            .unwrap()
+            .value;
+
+        decode_one::<String>(encoded_name.as_slice()).unwrap()
+    }
 }
 
 pub trait IEvent {

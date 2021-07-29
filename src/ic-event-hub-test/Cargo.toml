@@ -6,8 +6,8 @@ edition = "2018"
 publish = false
 
 [dependencies]
-ic-cdk = "0.3.0"
-ic-cdk-macros = "0.3.0"
+ic-cdk = "0.3.1"
+ic-cdk-macros = "0.3.1"
 serde = "1.0.126"
-ic-event-hub = { path = "../ic_event_hub" }
-ic-event-hub-macros = { path = "../ic_event_hub_macros" }
+ic-event-hub = { path = "../ic-event-hub" }
+ic-event-hub-macros = { path = "../ic-event-hub-macros" }
