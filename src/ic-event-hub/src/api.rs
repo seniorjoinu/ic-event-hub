@@ -14,14 +14,17 @@ pub struct EventHubClient {
 }
 
 impl EventHubClient {
+    #[inline(always)]
     pub fn new(canister_id: Principal) -> Self {
         Self { canister_id }
     }
 
+    #[inline(always)]
     pub async fn _add_event_listeners(&self, request: AddEventListenersRequest) -> CallResult<()> {
         call(self.canister_id, "_add_event_listeners", (request,)).await
     }
 
+    #[inline(always)]
     pub async fn _remove_event_listeners(
         &self,
         request: RemoveEventListenersRequest,
@@ -29,6 +32,7 @@ impl EventHubClient {
         call(self.canister_id, "_remove_event_listeners", (request,)).await
     }
 
+    #[inline(always)]
     pub async fn _become_event_listener(
         &self,
         payload: BecomeEventListenerRequest,
@@ -36,6 +40,7 @@ impl EventHubClient {
         call(self.canister_id, "_become_event_listener", (payload,)).await
     }
 
+    #[inline(always)]
     pub async fn _stop_being_event_listener(
         &self,
         request: StopBeingEventListenerRequest,
@@ -43,6 +48,7 @@ impl EventHubClient {
         call(self.canister_id, "_stop_being_event_listener", (request,)).await
     }
 
+    #[inline(always)]
     pub async fn _get_event_listeners(
         &self,
         request: GetEventListenersRequest,

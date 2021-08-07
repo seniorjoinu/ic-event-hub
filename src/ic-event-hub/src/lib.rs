@@ -30,6 +30,7 @@ pub struct Event {
 }
 
 impl Event {
+    #[inline(always)]
     pub fn get_name(&self) -> String {
         let encoded_name = self
             .topics
@@ -126,10 +127,12 @@ impl EventHub {
         listeners.insert(listener);
     }
 
+    #[inline(always)]
     pub fn match_event_listeners(&self, filter: &EventFilter) -> Vec<RemoteCallEndpoint> {
         self.match_event_listeners_by_topics(&filter.0)
     }
 
+    #[inline(always)]
     pub fn match_event_listeners_by_topics(
         &self,
         topics: &BTreeSet<EventField>,
@@ -170,6 +173,7 @@ impl EventHub {
 
 // ------------------- UTILS ----------------------
 
+#[inline(always)]
 pub fn log(msg: &str) {
     print(format!("[caller: {}]: {}", caller(), msg))
 }
