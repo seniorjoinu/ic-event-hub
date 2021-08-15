@@ -1,6 +1,0 @@
-[workspace]
-members = [
-    "src/ic-event-hub",
-    "src/ic-event-hub-macros",
-    "src/ic-event-hub-test"
-]
