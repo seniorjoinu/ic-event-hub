@@ -2,7 +2,7 @@ use ic_cdk::api::call::CallResult;
 use ic_cdk::call;
 use ic_cdk::export::candid::{CandidType, Deserialize, Principal};
 
-use crate::{
+use crate::types::{
     AddEventListenersRequest, BecomeEventListenerRequest, GetEventListenersRequest,
     GetEventListenersResponse, RemoveEventListenersRequest, RemoveEventListenersResponse,
     StopBeingEventListenerRequest, StopBeingEventListenerResponse,

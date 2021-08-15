@@ -1,8 +1,9 @@
 use proc_macro::TokenStream;
 use std::collections::BTreeSet;
 
+use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{parse, Data, DeriveInput, Fields};
+use syn::{parse, Data, DeriveInput, Fields, Ident as SynIdent, Type};
 
 pub fn event_macro_impl(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = parse(input).unwrap();
@@ -10,10 +11,10 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
     let name = &ast.ident;
     let name_str = name.to_string();
 
-    let filter_name = syn::Ident::new(&format!("{}Filter", name), proc_macro2::Span::call_site());
+    let filter_name = SynIdent::new(&format!("{}Filter", name), Span::call_site());
 
-    let mut topics: Vec<(proc_macro2::Ident, syn::Type, String)> = vec![];
-    let mut values: Vec<(proc_macro2::Ident, String)> = vec![];
+    let mut topics: Vec<(Ident, Type, String)> = vec![];
+    let mut values: Vec<(Ident, String)> = vec![];
 
     match ast.data {
         Data::Struct(ref data_struct) => {
@@ -48,7 +49,7 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
     // Transform marked elements into new struct fields
     let topics_event_ser = topics.iter().fold(quote!(), |es, (field, _, field_name)| {
         quote! {
-            #es res.insert(ic_event_hub::EventField {
+            #es res.insert(ic_event_hub::types::EventField {
                 name: String::from(#field_name),
                 value: ic_cdk::export::candid::encode_one(&self.#field).unwrap()
             });
@@ -71,7 +72,7 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
         quote! {
             #es
             if let Some(value) = &self.#field {
-                res.insert(ic_event_hub::EventField {
+                res.insert(ic_event_hub::types::EventField {
                     name: String::from(#field_name),
                     value: ic_cdk::export::candid::encode_one(value).unwrap()
                 });
@@ -87,7 +88,7 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
 
     let values_ser = values.iter().fold(quote!(), |es, (field, field_name)| {
         quote! {
-            #es ic_event_hub::EventField {
+            #es ic_event_hub::types::EventField {
                 name: String::from(#field_name),
                 value: ic_cdk::export::candid::encode_one(&self.#field).unwrap()
             },
@@ -102,22 +103,22 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
 
     // Create the new structure
     let gen = quote! {
-        impl ic_event_hub::IEvent for #name {
-             fn to_event(&self) -> ic_event_hub::Event {
+        impl ic_event_hub::types::IEvent for #name {
+             fn to_event(&self) -> ic_event_hub::types::Event {
                 let mut res = std::collections::BTreeSet::new();
-                res.insert(ic_event_hub::EventField {
+                res.insert(ic_event_hub::types::EventField {
                     name: String::from(ic_event_hub::EVENT_NAME_FIELD),
                     value: ic_cdk::export::candid::encode_one(#name_str).unwrap()
                 });
                 #topics_event_ser
 
-                ic_event_hub::Event {
+                ic_event_hub::types::Event {
                     topics: res,
                     values: vec![#values_ser],
                 }
             }
 
-            fn from_event(event: ic_event_hub::Event) -> Self {
+            fn from_event(event: ic_event_hub::types::Event) -> Self {
                 let fields: std::collections::HashMap<String, Vec<u8>> = event
                     .topics
                     .into_iter()
@@ -138,19 +139,19 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
             #topics_filter
         }
 
-        impl ic_event_hub::IEventFilter for #filter_name {
-             fn to_event_filter(&self) -> ic_event_hub::EventFilter {
+        impl ic_event_hub::types::IEventFilter for #filter_name {
+             fn to_event_filter(&self) -> ic_event_hub::types::EventFilter {
                 let mut res = std::collections::BTreeSet::new();
-                res.insert(ic_event_hub::EventField {
+                res.insert(ic_event_hub::types::EventField {
                     name: String::from(ic_event_hub::EVENT_NAME_FIELD),
                     value: ic_cdk::export::candid::encode_one(#name_str).unwrap()
                 });
                 #topics_filter_ser
 
-                ic_event_hub::EventFilter(res)
+                ic_event_hub::types::EventFilter(res)
             }
 
-            fn from_event_filter(filter: ic_event_hub::EventFilter) -> Self {
+            fn from_event_filter(filter: ic_event_hub::types::EventFilter) -> Self {
                 let fields: std::collections::HashMap<String, Vec<u8>> = filter
                     .0
                     .into_iter()

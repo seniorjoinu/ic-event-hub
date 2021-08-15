@@ -11,3 +11,5 @@ ic-cdk-macros = "0.3.1"
 serde = "1.0.126"
 ic-event-hub = { path = "../ic-event-hub" }
 ic-event-hub-macros = { path = "../ic-event-hub-macros" }
+futures = "0.3.16"
+union-utils = "0.1.2"

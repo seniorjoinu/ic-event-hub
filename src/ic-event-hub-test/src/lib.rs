@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use ic_event_hub::{IEvent, IEventFilter};
+    use ic_event_hub::types::{IEvent, IEventFilter};
     use ic_event_hub_macros::{
         implement_add_event_listeners, implement_become_event_listener, implement_event_emitter,
         implement_get_event_listeners, implement_remove_event_listeners,
