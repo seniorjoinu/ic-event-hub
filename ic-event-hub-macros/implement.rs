@@ -80,6 +80,7 @@ pub fn implement_add_event_listeners_impl(ts: TokenStream) -> TokenStream {
     gen.into()
 }
 
+// TODO: trap on error
 pub fn implement_remove_event_listeners_impl(ts: TokenStream) -> TokenStream {
     let ic_macro = generate_ic_update_macro(ts);
 
@@ -131,6 +132,8 @@ pub fn implement_become_event_listener_impl(ts: TokenStream) -> TokenStream {
     gen.into()
 }
 
+
+// TODO: trap on error
 pub fn implement_stop_being_event_listener_impl(ts: TokenStream) -> TokenStream {
     let ic_macro = generate_ic_update_macro(ts);
 
