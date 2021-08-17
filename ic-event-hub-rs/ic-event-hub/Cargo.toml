@@ -1,6 +1,6 @@
 [package]
 name = "ic-event-hub"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
 description = "event hub"

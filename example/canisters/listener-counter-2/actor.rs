@@ -1,5 +1,5 @@
-use ic_cdk::export::candid::{export_service, Principal};
 use ic_cdk::{caller, trap};
+use ic_cdk::export::candid::{export_service, Principal};
 use ic_cdk_macros::{init, query, update};
 use ic_event_hub::api::EventHubClient;
 use ic_event_hub::types::{BecomeEventListenerRequest, EventListener};

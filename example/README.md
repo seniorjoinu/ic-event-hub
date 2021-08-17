@@ -1,11 +1,10 @@
-## IC Event Hub example
+### IC Event Hub usage example
 
-The example consists of three following canisters:
+The example shows how a single emitter could emit the same event, but in reality send them only to those listeners,
+which are subscribed to it. Emitter is a counter canister, which gets incremented by a user. Listeners are also counter
+canisters, but they mirror the emitter's canister state only when they need to.
 
-* [emitter-counter](./emitter-counter) - counter canister that emits an event each time it increments a value
-* [listener-counter-1](./listener-counter-1) - canister that completely mirrors the emitter by listening for all the
-  emitted events
-* [listener-counter-2](./listener-counter-2) - canister that only mirrors the emitter, when the increment was triggered
-  by some specified controller
+It contains:
 
-Execute the [e2e-test](../example-e2e-test) locally to see how it works.
+* [canisters](./canisters)
+* [ts-mocha e2e test](./e2e-test)
