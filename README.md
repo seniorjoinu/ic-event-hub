@@ -48,14 +48,15 @@ pub struct FlipEvent {
 }
 ```
 
-This `Event` definition looks pretty normal for rust, the only interesting things are annotations: `#[derive(Event)]`
+This `FlipEvent` definition looks pretty normal for rust, the only interesting things are
+annotations: `#[derive(Event)]`
 and `#[topic]`. The first one is a derive macro, which will:
 
 1. generate an implementation for `ic_event_hub::IEvent` trait, which we need in order to serialize this event in a way
    that is optimized for topic indexing; `#[topic]` annotation is used exactly for that - to mark fields, which could be
-   used by a listener to specify what updated does it want to receive precisely
-2. generate a `Filter` struct for our `Event`, that makes it easier for listeners to use when they subscribe for
-   updates.
+   used by a listener to specify what updates does it want to receive precisely
+2. generate a `FlipEventFilter` struct for our `FlipEvent`, that makes it easier for listeners to use when they
+   subscribe for updates.
 
 Precisely the macro will expand into this code:
 
@@ -77,8 +78,8 @@ impl ic_event_hub::types::IEvent for FlipEvent {
     }
 }
 
-// take a look at this `Filter` struct
-// notice it hase the same name as our `Event` struct, but with "Filter" postfix
+// take a look at this struct
+// notice it hase the same name as our `FlipEvent` struct, but with "Filter" postfix
 pub struct FlipEventFilter {
     // also notice the type of the only topic we had in `FlipEvent` 
     // now transformed into optional - passing here `None` will create us a filter that will match ANY flip event
@@ -98,7 +99,7 @@ impl ic_event_hub::types::IEventFilter for FlipEventFilter {
 
 Now we have two structs `FlipEvent` and `FlipEventFilter` which will help us later.
 
-#### How can a canister extend another canister's code?
+#### How to become an event emitter
 
 We have everything ready to implement our Flipper canister, which is the __emitter__ in terms of event-hub. Let's start
 by implementing basic event-hub functionality:
@@ -115,7 +116,7 @@ emit events. Specifically it will generate the next functions:
 1. `get_event_hub() -> ic_event_hub::event_hub::EventHub` - returns an object holding all the info about current active
    listeners; don't worry, you won't need it until you decide to extend `ic-event-hub` with some new functionality
 2. `emit(event: ic_event_hub::types::IEvent)` - serializes the passed event and sends it to every single listener
-   interested in it; this function is what we'll mostly use
+   interested in it; __this function is what we'll mostly use__
 
 Okay, now we can emit events, but how exactly does one become an event listener? There are several approaches to achieve
 that: permissionless one, permissioned one and their combinations.
@@ -236,7 +237,7 @@ it could use this knowledge to subscribe to the Flipper canister and react to th
 [canister client](./ic-event-hub-rs/ic-event-hub/src/api.rs) for event-hub listeners! It is a very simple, but helpful
 rust struct with impl that gives us a strict API to interact with such an emitter-canister.
 
-Since the logic is pretty simple, let's roughly define how the Fund canister could look like:
+Since the logic is pretty straightforward now, let's roughly define how the Fund canister could look like:
 
 ```rust
 // fund-canister.rs
@@ -290,7 +291,7 @@ async fn _handle_flipper_event(event: ic_event_hub::types::Event) {
 
 Let's quickly recap what we just wrote.
 
-1. If the emitter in the permissionless mode, your listener-canister should somehow subscribe to events it wants to
+1. If the emitter is in the permissionless mode, your listener-canister should somehow subscribe to events it wants to
    listen to. Since it can't do it automatically on `#[init]` (you can't send messages during init function), you'll
    have to do it manually.
 2. While subscribing, listener have to specify a handler endpoint to which it wants to receive emitted events. These
@@ -298,10 +299,10 @@ Let's quickly recap what we just wrote.
 3. Handler endpoint can have any name and can have any return type (it is ignored by the emitter, anyway). The only
    restriction here - it should accept a single argument of type `ic_event_hub::types::Event`.
 
-As you might guess, the implementation for the Ledger canister, will look very similar (considering the degree of
+As you might guess, the implementation for the Ledger canister, will look very similar (especially with the degree of
 detalization I've chosen for this tutorial). The only difference here is that the Ledger canister only wants to receive
-events related to Joinu's principal. Let's imagine, Joinu has multiple public principals, luck each of which the Ledger
-canister could keep track of.
+events related to Joinu's principal. Let's imagine, Joinu has multiple public principals, luckiness each of which the
+Ledger canister could keep track of.
 
 Let's implement this scenario:
 
@@ -343,6 +344,7 @@ async fn start_listening_to_flipper_events() {
 #[ic_cdk_macros::update(guard = "flipper_guard")]
 async fn _handle_flipper_event(event: ic_event_hub::types::Event) {
     if event.get_name().as_str() == "FlipEvent" {
+        // here we will now only receive events of flips made by Joinu!
         let ev: FlipEvent = FlipEvent::from_event(event);
     
         _store_history_entry(ev);
@@ -352,13 +354,13 @@ async fn _handle_flipper_event(event: ic_event_hub::types::Event) {
 
 > You're not restricted on the number of topics your event could have. It could not have any topics at all - in that case every listener would catch every event of that event type.
 
-As you might also guess, supplying multiple filters of the same event is an equivalent to logical __OR__. Contrary,
+As you might already guess, supplying multiple filters of the same event is an equivalent to logical __OR__. Contrary,
 supplying a single filter with multiple topics set to `Some()` is an equivalent to logical __AND__.
 
 #### Final notes
 
-While the example used in this tutorial is purely synthetic and the implementation is abstract, I hope it was still
-useful for you. We reached our goal and went through almost everything this library has to offer.
+While the example used in this tutorial is purely synthetic and the implementation is abstract, I hope it was useful for
+you. We reached our goal and went through almost everything this library has to offer.
 
 Check the [example project](./example) for working code sample.
 
@@ -371,6 +373,10 @@ Check the [example project](./example) for working code sample.
 ic-event-hub = "0.1.8"
 ic-event-hub-macros = "0.1.8"
 ```
+
+### API
+
+TODO
 
 ### Limitations
 
