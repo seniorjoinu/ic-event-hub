@@ -368,8 +368,8 @@ Check the [example project](./example) for working code sample.
 # Cargo.toml
 
 [dependencies]
-ic-event-hub = "0.1.7"
-ic-event-hub-macros = "0.1.7"
+ic-event-hub = "0.1.8"
+ic-event-hub-macros = "0.1.8"
 ```
 
 ### Limitations

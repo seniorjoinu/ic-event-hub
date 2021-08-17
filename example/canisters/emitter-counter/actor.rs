@@ -1,7 +1,7 @@
 use ic_cdk::caller;
 use ic_cdk::export::candid::{export_service, Principal};
 use ic_cdk_macros::{query, update};
-use ic_event_hub_macros::{implement_become_event_listener, implement_event_emitter, Event};
+use ic_event_hub_macros::{Event, implement_become_event_listener, implement_event_emitter};
 use union_utils::log;
 
 // ------------- MAIN LOGIC -------------------
