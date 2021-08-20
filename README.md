@@ -370,13 +370,13 @@ Check the [example project](./example) for working code sample.
 # Cargo.toml
 
 [dependencies]
-ic-event-hub = "0.1.8"
-ic-event-hub-macros = "0.1.8"
+ic-event-hub = "0.1.9"
+ic-event-hub-macros = "0.1.9"
 ```
 
 ### API
 
-Check crates.io
+Check [docs.rs](https://docs.rs/ic-event-hub-macros/)
 
 ### Limitations
 
