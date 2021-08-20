@@ -2,20 +2,20 @@
   "canisters": {
     "emitter-counter": {
       "build": "./buildscripts/emitter-counter.sh",
-      "candid": "../example/emitter-counter/can.did",
-      "wasm": "../example/emitter-counter/target/wasm32-unknown-unknown/release/emitter-counter-opt.wasm",
+      "candid": "../canisters/emitter-counter/can.did",
+      "wasm": "../canisters/emitter-counter/target/wasm32-unknown-unknown/release/emitter-counter-opt.wasm",
       "type": "custom"
     },
     "listener-counter-1": {
       "build": "./buildscripts/listener-counter-1.sh",
-      "candid": "../example/listener-counter-1/can.did",
-      "wasm": "../example/listener-counter-1/target/wasm32-unknown-unknown/release/listener-counter-1-opt.wasm",
+      "candid": "../canisters/listener-counter-1/can.did",
+      "wasm": "../canisters/listener-counter-1/target/wasm32-unknown-unknown/release/listener-counter-1-opt.wasm",
       "type": "custom"
     },
     "listener-counter-2": {
       "build": "./buildscripts/listener-counter-2.sh",
-      "candid": "../example/listener-counter-2/can.did",
-      "wasm": "../example/listener-counter-2/target/wasm32-unknown-unknown/release/listener-counter-2-opt.wasm",
+      "candid": "../canisters/listener-counter-2/can.did",
+      "wasm": "../canisters/listener-counter-2/target/wasm32-unknown-unknown/release/listener-counter-2-opt.wasm",
       "type": "custom"
     }
   },

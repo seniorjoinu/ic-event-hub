@@ -80,29 +80,28 @@ pub fn implement_add_event_listeners_impl(ts: TokenStream) -> TokenStream {
     gen.into()
 }
 
-// TODO: trap on error
 pub fn implement_remove_event_listeners_impl(ts: TokenStream) -> TokenStream {
     let ic_macro = generate_ic_update_macro(ts);
 
     let gen = quote! {
         #ic_macro
-        fn _remove_event_listeners(
-            request: ic_event_hub::types::RemoveEventListenersRequest,
-        ) -> ic_event_hub::types::RemoveEventListenersResponse {
+        fn _remove_event_listeners(request: ic_event_hub::types::RemoveEventListenersRequest) {
             union_utils::log("ic_event_hub._remove_event_listeners()");
 
             let hub = get_event_hub();
             let mut results = vec![];
 
-            for listener in request.listeners.into_iter() {
-                results.push(hub.remove_event_listener(
+            for (idx, listener) in request.listeners.into_iter().enumerate() {
+                let res = hub.remove_event_listener(
                     &listener.filter,
                     listener.endpoint.method_name,
                     listener.endpoint.canister_id,
-                ));
-            }
+                );
 
-            ic_event_hub::types::RemoveEventListenersResponse { results }
+                if res.is_err() {
+                    ic_cdk::trap(format!("Unable to remove listener #{} - {}", idx, res.err().unwrap()).as_str());
+                }
+            }
         }
     };
 
@@ -133,29 +132,27 @@ pub fn implement_become_event_listener_impl(ts: TokenStream) -> TokenStream {
 }
 
 
-// TODO: trap on error
 pub fn implement_stop_being_event_listener_impl(ts: TokenStream) -> TokenStream {
     let ic_macro = generate_ic_update_macro(ts);
 
     let gen = quote! {
         #ic_macro
-        fn _stop_being_event_listener(
-            request: ic_event_hub::types::StopBeingEventListenerRequest,
-        ) -> ic_event_hub::types::StopBeingEventListenerResponse {
+        fn _stop_being_event_listener(request: ic_event_hub::types::StopBeingEventListenerRequest) {
             union_utils::log("ic_event_hub._stop_being_event_listener()");
 
             let hub = get_event_hub();
-            let mut results = vec![];
 
-            for listener in request.listeners.into_iter() {
-                results.push(hub.remove_event_listener(
+            for (idx, listener) in request.listeners.into_iter().enumerate() {
+                let res = hub.remove_event_listener(
                     &listener.filter,
                     listener.callback_method_name,
                     ic_cdk::caller(),
-                ));
-            }
+                );
 
-            ic_event_hub::types::StopBeingEventListenerResponse { results }
+                if res.is_err() {
+                    ic_cdk::trap(format!("Unable to remove listener #{} - {}", idx, res.err().unwrap()).as_str());
+                }
+            }
         }
     };
 

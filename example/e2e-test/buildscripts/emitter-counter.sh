@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-cd ../example/emitter-counter || exit
+cd ../canisters/emitter-counter || exit
 bash ./build.sh

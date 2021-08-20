@@ -376,7 +376,7 @@ ic-event-hub-macros = "0.1.8"
 
 ### API
 
-TODO
+Check crates.io
 
 ### Limitations
 
@@ -391,10 +391,8 @@ function.
 
 Once `heartbeat` IC functionality is ready, I have a plan to optimize messaging layer (with the help
 of [ic-cron](https://github.com/seniorjoinu/ic-cron)), putting messages into a buffer and then bulk-sending them when
-the heart beats. It should greatly reduce costs in a scenarios when there are a lot of events targeted to a single
+the heart beats. It should greatly reduce costs in scenarios when there are lots of events targeted to a single
 listener.
-
-So, until then, APIs are subject to change without notice.
 
 ### Candid
 

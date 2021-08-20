@@ -5,6 +5,7 @@ use union_utils::RemoteCallEndpoint;
 
 use crate::types::{EventField, EventFilter};
 
+/// A struct that associates event topics with subscribed listeners
 #[derive(Default)]
 pub struct EventHub(BTreeMap<EventFilter, HashSet<RemoteCallEndpoint>>);
 

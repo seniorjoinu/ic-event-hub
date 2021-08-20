@@ -13,5 +13,6 @@ ic-cdk = "0.3.1"
 ic-cdk-macros = "0.3.1"
 serde = "1.0.126"
 union-utils = "0.1.3"
-ic-event-hub = "0.1.7"
-ic-event-hub-macros = "0.1.7"
+
+ic-event-hub = { path = "../../../ic-event-hub-rs/ic-event-hub" }
+ic-event-hub-macros = { path = "../../../ic-event-hub-rs/ic-event-hub-macros" }

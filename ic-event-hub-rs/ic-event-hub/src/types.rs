@@ -5,12 +5,14 @@ use union_utils::RemoteCallEndpoint;
 
 use crate::EVENT_NAME_FIELD;
 
+/// Serialized representation of some field of an event
 #[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize)]
 pub struct EventField {
     pub name: String,
     pub value: Vec<u8>,
 }
 
+/// Serialized event structure
 #[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct Event {
     pub topics: BTreeSet<EventField>,
@@ -18,6 +20,7 @@ pub struct Event {
 }
 
 impl Event {
+    /// Finds a serialized name of the event struct, deserializes it and returns
     #[inline(always)]
     pub fn get_name(&self) -> String {
         let encoded_name = self
@@ -32,14 +35,21 @@ impl Event {
     }
 }
 
+/// Represents an struct that could be serialized into an `Event`
+///
+/// use `#[derive(Event)]` to implement it automatically
 pub trait IEvent {
     fn to_event(&self) -> Event;
     fn from_event(event: Event) -> Self;
 }
 
+/// A set of topics of interest of a particular event listener
 #[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize)]
 pub struct EventFilter(pub BTreeSet<EventField>);
 
+/// Represents a struct that could be serialized into an `EventFilter`
+///
+/// using `#[derive(Event)]` you're also generate such a filter automatically
 pub trait IEventFilter {
     fn to_event_filter(&self) -> EventFilter;
     fn from_event_filter(filter: EventFilter) -> Self;
@@ -67,21 +77,11 @@ pub struct AddEventListenersRequest {
 pub type RemoveEventListenersRequest = AddEventListenersRequest;
 
 #[derive(CandidType, Deserialize)]
-pub struct RemoveEventListenersResponse {
-    pub results: Vec<Result<(), String>>,
-}
-
-#[derive(CandidType, Deserialize)]
 pub struct BecomeEventListenerRequest {
     pub listeners: Vec<EventListener>,
 }
 
 pub type StopBeingEventListenerRequest = BecomeEventListenerRequest;
-
-#[derive(CandidType, Deserialize)]
-pub struct StopBeingEventListenerResponse {
-    pub results: Vec<Result<(), String>>,
-}
 
 #[derive(CandidType, Deserialize)]
 pub struct GetEventListenersRequest {
