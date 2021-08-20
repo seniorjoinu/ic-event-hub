@@ -3,8 +3,11 @@ name = "ic-event-hub"
 version = "0.1.8"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
-description = "event hub"
+description = "Event-based pub/sub for IC canisters"
+keywords = ["events", "pubsub", "internet-computer", "dfinity"]
 license = "MIT"
+readme = "../../README.md"
+repository = "https://github.com/seniorjoinu/ic-event-hub"
 
 [dependencies]
 ic-cdk = "0.3.1"
