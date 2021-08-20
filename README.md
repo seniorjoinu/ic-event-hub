@@ -1,6 +1,6 @@
 ## IC Event Hub
 
-A rust library which applies IoC to your pub/sub
+A rust library which enables event-based pub/sub for IC canisters
 
 ### Motivation
 
