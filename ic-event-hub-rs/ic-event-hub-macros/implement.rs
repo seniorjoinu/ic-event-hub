@@ -89,7 +89,6 @@ pub fn implement_remove_event_listeners_impl(ts: TokenStream) -> TokenStream {
             union_utils::log("ic_event_hub._remove_event_listeners()");
 
             let hub = get_event_hub();
-            let mut results = vec![];
 
             for (idx, listener) in request.listeners.into_iter().enumerate() {
                 let res = hub.remove_event_listener(

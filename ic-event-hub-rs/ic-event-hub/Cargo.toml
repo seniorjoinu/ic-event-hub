@@ -1,6 +1,6 @@
 [package]
 name = "ic-event-hub"
-version = "0.1.9"
+version = "0.1.10"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
 description = "Event-based pub/sub for IC canisters"
