@@ -130,7 +130,6 @@ pub fn implement_become_event_listener_impl(ts: TokenStream) -> TokenStream {
     gen.into()
 }
 
-
 pub fn implement_stop_being_event_listener_impl(ts: TokenStream) -> TokenStream {
     let ic_macro = generate_ic_update_macro(ts);
 
