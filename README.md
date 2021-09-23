@@ -39,7 +39,7 @@ This event should contain some `nat` ID, flip result - `Heads`/`Tails`, and the 
 of the user flipped the coin. Let's define it!
 
 ```rust
-#[derive[ic_event_hub_macros::Event]]
+#[derive(ic_event_hub_macros::Event)]
 pub struct FlipEvent {
     pub id: u64,
     pub heads: bool,
@@ -203,7 +203,7 @@ ic_event_hub_macros::implement_event_emitter!();
 ic_event_hub_macros::implement_become_event_listener!();
 ic_event_hub_macros::implement_stop_being_event_listener!();
 
-#[derive[ic_event_hub_macros::Event]]
+#[derive(ic_event_hub_macros::Event)]
 pub struct FlipEvent {
     pub id: u64,
     pub heads: bool,
@@ -243,7 +243,7 @@ Since the logic is pretty straightforward now, let's roughly define how the Fund
 // fund-canister.rs
 
 // this struct could be shared through a library
-#[derive[ic_event_hub_macros::Event]]
+#[derive(ic_event_hub_macros::Event)]
 pub struct FlipEvent {
     pub id: u64,
     pub heads: bool,
@@ -310,7 +310,7 @@ Let's implement this scenario:
 // ledger-canister.rs
 
 // again, we need to know this struct beforehand
-#[derive[ic_event_hub_macros::Event]]
+#[derive(ic_event_hub_macros::Event)]
 pub struct FlipEvent {
     pub id: u64,
     pub heads: bool,
