@@ -1,15 +1,51 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::btree_map::Entry;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ic_cdk::export::Principal;
-use union_utils::RemoteCallEndpoint;
+use ic_cdk::print;
 
-use crate::types::{EventField, EventFilter};
+use crate::types::{Event, EventField, EventFilter, RemoteCallEndpoint};
 
 /// A struct that associates event topics with subscribed listeners
 #[derive(Default)]
-pub struct EventHub(BTreeMap<EventFilter, HashSet<RemoteCallEndpoint>>);
+pub struct EventHub {
+    pub listeners: HashMap<EventFilter, HashSet<RemoteCallEndpoint>>,
+    pub pending_events: BTreeMap<RemoteCallEndpoint, Vec<Event>>,
+}
 
 impl EventHub {
+    pub fn pop_pending_events(&mut self) -> Option<(RemoteCallEndpoint, Vec<Event>)> {
+        let (endpoint, _) = self.pending_events.iter_mut().next_back()?;
+
+        let endpoint = endpoint.clone();
+        let events = self.pending_events.remove(&endpoint)?;
+
+        Some((endpoint, events))
+    }
+
+    pub fn push_pending_event(&mut self, pending_event: Event) {
+        print(format!("{:?}", self.listeners));
+        let listeners = self.match_event_listeners_by_topics(&pending_event.topics);
+
+        print(format!("{:?}", listeners));
+
+        if listeners.is_empty() {
+            // when nobody listens to the event it is rejected
+            return;
+        }
+
+        for listener in listeners {
+            match self.pending_events.entry(listener) {
+                Entry::Vacant(e) => {
+                    e.insert(vec![pending_event.clone()]);
+                }
+                Entry::Occupied(mut e) => {
+                    e.get_mut().push(pending_event.clone());
+                }
+            };
+        }
+    }
+
     pub fn add_event_listener(
         &mut self,
         filter: EventFilter,
@@ -21,12 +57,11 @@ impl EventHub {
             method_name: event_listener_method_name,
         };
 
-        let listeners = self.0.entry(filter).or_insert_with(HashSet::new);
+        let listeners = self.listeners.entry(filter).or_insert_with(HashSet::new);
 
         listeners.insert(listener);
     }
 
-    #[inline(always)]
     pub fn match_event_listeners(&self, filter: &EventFilter) -> Vec<RemoteCallEndpoint> {
         self.match_event_listeners_by_topics(&filter.0)
     }
@@ -35,7 +70,7 @@ impl EventHub {
         &self,
         topics: &BTreeSet<EventField>,
     ) -> Vec<RemoteCallEndpoint> {
-        self.0
+        self.listeners
             .iter()
             .filter(|&entry| entry.0 .0.is_subset(topics))
             .map(|entry| entry.1.clone())
@@ -50,7 +85,7 @@ impl EventHub {
         caller: Principal,
     ) -> Result<(), String> {
         let listeners = self
-            .0
+            .listeners
             .get_mut(filter)
             .ok_or_else(|| String::from("No such filter"))?;
 
@@ -71,10 +106,10 @@ impl EventHub {
 
 #[cfg(test)]
 mod tests {
-    use union_utils::{random_principal_test, RemoteCallEndpoint};
+    use union_utils::random_principal_test;
 
     use crate::event_hub::EventHub;
-    use crate::types::{EventField, EventFilter};
+    use crate::types::{EventField, EventFilter, RemoteCallEndpoint};
 
     #[test]
     fn main_flow_works_fine() {

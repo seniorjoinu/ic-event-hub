@@ -11,5 +11,8 @@ pub mod event_hub;
 /// Various structs and traits
 pub mod types;
 
+/// Lower level function to be used inside macroses
+pub mod fns;
+
 /// Marker that enables event name serialization
 pub const EVENT_NAME_FIELD: &str = "__event_name";

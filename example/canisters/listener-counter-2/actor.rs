@@ -1,11 +1,11 @@
-use ic_cdk::{caller, trap};
 use ic_cdk::export::candid::{export_service, Principal};
+use ic_cdk::{caller, trap};
 use ic_cdk_macros::{init, query, update};
+
 use ic_event_hub::api::EventHubClient;
 use ic_event_hub::types::{BecomeEventListenerRequest, EventListener};
 use ic_event_hub::types::{Event, IEvent, IEventFilter};
 use ic_event_hub_macros::Event;
-use union_utils::log;
 
 // ------------- MAIN LOGIC -------------------
 
@@ -33,8 +33,6 @@ fn init(emitter_canister_id: Principal) {
 
 #[update]
 async fn start_listening() {
-    log("listener-2.start_listening()");
-
     let client = EventHubClient::new(get_state().emitter_canister_id);
 
     let filter = IncrementEventFilter { by: Some(caller()) };
@@ -43,7 +41,7 @@ async fn start_listening() {
         ._become_event_listener(BecomeEventListenerRequest {
             listeners: vec![EventListener {
                 filter: filter.to_event_filter(),
-                callback_method_name: String::from("_mirror"),
+                callback_method_name: String::from("events_callback"),
             }],
         })
         .await
@@ -57,12 +55,12 @@ fn get_counter_value() -> u64 {
 }
 
 #[update]
-fn _mirror(event: Event) {
-    log("listener-2._filtering_mirror()");
-
-    if event.get_name().as_str() == "IncrementEvent" {
-        let ev: IncrementEvent = IncrementEvent::from_event(event);
-        get_state().counter = ev.current_value;
+fn events_callback(events: Vec<Event>) {
+    for event in events {
+        if event.get_name().as_str() == "IncrementEvent" {
+            let ev: IncrementEvent = IncrementEvent::from_event(event);
+            get_state().counter = ev.current_value;
+        }
     }
 }
 

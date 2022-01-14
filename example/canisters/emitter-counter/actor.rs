@@ -1,8 +1,8 @@
 use ic_cdk::caller;
 use ic_cdk::export::candid::{export_service, Principal};
-use ic_cdk_macros::{query, update};
-use ic_event_hub_macros::{Event, implement_become_event_listener, implement_event_emitter};
-use union_utils::log;
+use ic_cdk_macros::{heartbeat, query, update};
+
+use ic_event_hub_macros::{implement_become_event_listener, implement_event_emitter, Event};
 
 // ------------- MAIN LOGIC -------------------
 
@@ -20,8 +20,6 @@ pub struct IncrementEvent {
 
 #[update]
 fn inc() -> u64 {
-    log("emitter.inc()");
-
     let state = get_state();
 
     state.counter += 1;
@@ -32,6 +30,11 @@ fn inc() -> u64 {
     });
 
     state.counter
+}
+
+#[heartbeat]
+pub fn tick() {
+    send_events(10);
 }
 
 // ------------------ EVENT HUB ------------------

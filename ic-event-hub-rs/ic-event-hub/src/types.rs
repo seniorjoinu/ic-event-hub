@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use ic_cdk::export::candid::{decode_one, CandidType, Deserialize};
-use union_utils::RemoteCallEndpoint;
+use ic_cdk::export::Principal;
 
 use crate::EVENT_NAME_FIELD;
 
@@ -91,4 +91,10 @@ pub struct GetEventListenersRequest {
 #[derive(CandidType, Deserialize)]
 pub struct GetEventListenersResponse {
     pub listeners: Vec<Vec<RemoteCallEndpoint>>,
+}
+
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, CandidType, Deserialize)]
+pub struct RemoteCallEndpoint {
+    pub canister_id: Principal,
+    pub method_name: String,
 }
