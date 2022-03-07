@@ -1,5 +1,5 @@
-use ic_cdk::caller;
 use ic_cdk::export::candid::{export_service, Principal};
+use ic_cdk::{caller, id};
 use ic_cdk_macros::{heartbeat, query, update};
 
 use ic_event_hub_macros::{implement_become_event_listener, implement_event_emitter, Event};
@@ -18,6 +18,11 @@ pub struct IncrementEvent {
     pub current_value: u64,
 }
 
+#[derive(Event)]
+pub struct EmptyEvent {
+    pub author: Principal,
+}
+
 #[update]
 fn inc() -> u64 {
     let state = get_state();
@@ -29,13 +34,19 @@ fn inc() -> u64 {
         current_value: state.counter,
     });
 
+    emit(EmptyEvent { author: id() });
+
+    emit(EmptyEvent { author: id() });
+
+    emit(EmptyEvent { author: id() });
+
     state.counter
 }
 
 #[heartbeat]
 pub fn tick() {
-    send_events(100 * 1024);
-} // 100 kb max batch size
+    send_events(1 * 1024 * 1024);
+} // 1 MB max batch size
 
 // ------------------ EVENT HUB ------------------
 

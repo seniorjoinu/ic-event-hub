@@ -3,7 +3,7 @@ use ic_cdk::{print, trap};
 use ic_cdk_macros::{init, query, update};
 
 use ic_event_hub::api::EventHubClient;
-use ic_event_hub::types::{BecomeEventListenerRequest, EventListener};
+use ic_event_hub::types::{BecomeEventListenerRequest, EventFilter, EventListener};
 use ic_event_hub::types::{Event, IEvent, IEventFilter};
 use ic_event_hub_macros::Event;
 
@@ -35,12 +35,10 @@ fn init(emitter_canister_id: Principal) {
 async fn start_listening() {
     let client = EventHubClient::new(get_state().emitter_canister_id);
 
-    let filter = IncrementEventFilter { by: None };
-
     client
         ._become_event_listener(BecomeEventListenerRequest {
             listeners: vec![EventListener {
-                filter: filter.to_event_filter(),
+                filter: EventFilter::empty(),
                 callback_method_name: String::from("events_callback"),
             }],
         })

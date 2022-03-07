@@ -205,7 +205,7 @@ pub fn get_event_listeners_impl(
 #[cfg(test)]
 mod tests {
     use candid::ser::{TypeSerialize, ValueSerializer};
-    use candid::{encode_args, CandidType, Nat};
+    use candid::{encode_args, encode_one, CandidType, Nat};
 
     #[test]
     fn tst() {
@@ -229,5 +229,29 @@ mod tests {
         kek2.extend_from_slice(value_ser.get_result());
 
         assert_eq!(kek1, kek2, "Keks not equal");
+
+        let v1 = Nat::from(123123123u64);
+        let v2 = Nat::from(4312412341u64);
+        let v3 = Nat::from(6456464554u64);
+
+        let kek1 =
+            encode_one(vec![v1.clone(), v2.clone(), v3.clone()]).expect("Unable to encode args");
+
+        let mut type_ser = TypeSerialize::new();
+        type_ser.push_type(&Vec::<Nat>::ty()).unwrap();
+        type_ser.serialize().unwrap();
+
+        let mut value_ser = ValueSerializer::new();
+        v1.idl_serialize(&mut value_ser).unwrap();
+        v2.idl_serialize(&mut value_ser).unwrap();
+        v3.idl_serialize(&mut value_ser).unwrap();
+
+        let mut kek2 = vec![];
+        kek2.extend_from_slice(b"DIDL");
+        kek2.extend_from_slice(type_ser.get_result());
+        leb128::write::unsigned(&mut kek2, 3).unwrap();
+        kek2.extend_from_slice(value_ser.get_result());
+
+        assert_eq!(kek1, kek2, "Keks not equal 2");
     }
 }

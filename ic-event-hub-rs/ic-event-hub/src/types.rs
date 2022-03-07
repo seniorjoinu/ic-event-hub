@@ -50,6 +50,12 @@ pub trait IEvent {
 #[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize)]
 pub struct EventFilter(pub BTreeSet<EventField>);
 
+impl EventFilter {
+    pub fn empty() -> Self {
+        Self(BTreeSet::new())
+    }
+}
+
 /// Represents a struct that could be serialized into an `EventFilter`
 ///
 /// using `#[derive(Event)]` you're also generate such a filter automatically
