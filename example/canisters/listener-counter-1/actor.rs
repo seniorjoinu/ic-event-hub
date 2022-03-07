@@ -1,5 +1,5 @@
 use ic_cdk::export::candid::{export_service, Principal};
-use ic_cdk::trap;
+use ic_cdk::{print, trap};
 use ic_cdk_macros::{init, query, update};
 
 use ic_event_hub::api::EventHubClient;
@@ -56,6 +56,8 @@ fn get_counter_value() -> u64 {
 
 #[update]
 fn events_callback(events: Vec<Event>) {
+    print(format!("Received events: {:?}", events).as_str());
+
     for event in events {
         if event.get_name().as_str() == "IncrementEvent" {
             let ev: IncrementEvent = IncrementEvent::from_event(event);

@@ -34,8 +34,8 @@ fn inc() -> u64 {
 
 #[heartbeat]
 pub fn tick() {
-    send_events(10);
-}
+    send_events(100 * 1024);
+} // 100 kb max batch size
 
 // ------------------ EVENT HUB ------------------
 

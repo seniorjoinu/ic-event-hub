@@ -1,6 +1,7 @@
+use candid::{CandidType, Deserialize};
 use ic_cdk::api::call::CallResult;
 use ic_cdk::call;
-use ic_cdk::export::candid::{CandidType, Deserialize, Principal};
+use ic_cdk::export::candid::Principal;
 
 use crate::types::{
     AddEventListenersRequest, BecomeEventListenerRequest, GetEventListenersRequest,

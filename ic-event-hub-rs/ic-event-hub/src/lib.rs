@@ -11,7 +11,7 @@ pub mod event_hub;
 /// Various structs and traits
 pub mod types;
 
-/// Lower level function to be used inside macroses
+/// Lower level function to be used inside macros
 pub mod fns;
 
 /// Marker that enables event name serialization

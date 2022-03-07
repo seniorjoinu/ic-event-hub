@@ -1,19 +1,22 @@
 use std::collections::BTreeSet;
 
-use ic_cdk::export::candid::{decode_one, CandidType, Deserialize};
+use candid::{decode_one, CandidType as CandidTypeX, Deserialize};
+use ic_cdk::export::candid::CandidType;
 use ic_cdk::export::Principal;
 
 use crate::EVENT_NAME_FIELD;
 
 /// Serialized representation of some field of an event
-#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize)]
+#[derive(
+    Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize, CandidTypeX,
+)]
 pub struct EventField {
     pub name: String,
     pub value: Vec<u8>,
 }
 
 /// Serialized event structure
-#[derive(Clone, Debug, CandidType, Deserialize)]
+#[derive(Clone, Debug, CandidType, Deserialize, CandidTypeX)]
 pub struct Event {
     pub topics: BTreeSet<EventField>,
     pub values: Vec<EventField>,

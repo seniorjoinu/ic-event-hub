@@ -2,15 +2,23 @@ use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ic_cdk::export::Principal;
-use ic_cdk::print;
 
 use crate::types::{Event, EventField, EventFilter, RemoteCallEndpoint};
+
+pub type EncodedEventBatch = Vec<u8>;
+pub struct EncodedBatchesBytes {
+    pub endpoint: RemoteCallEndpoint,
+    pub size_bytes: usize,
+}
 
 /// A struct that associates event topics with subscribed listeners
 #[derive(Default)]
 pub struct EventHub {
+    pub batch_threshold_bytes: usize,
+    pub batch_max_size_bytes: usize,
     pub listeners: HashMap<EventFilter, HashSet<RemoteCallEndpoint>>,
     pub pending_events: BTreeMap<RemoteCallEndpoint, Vec<Event>>,
+    pub pending_payload_sizes_desc: Vec<EncodedBatchesBytes>,
 }
 
 impl EventHub {
@@ -24,10 +32,7 @@ impl EventHub {
     }
 
     pub fn push_pending_event(&mut self, pending_event: Event) {
-        print(format!("{:?}", self.listeners));
         let listeners = self.match_event_listeners_by_topics(&pending_event.topics);
-
-        print(format!("{:?}", listeners));
 
         if listeners.is_empty() {
             // when nobody listens to the event it is rejected
@@ -38,7 +43,7 @@ impl EventHub {
             match self.pending_events.entry(listener) {
                 Entry::Vacant(e) => {
                     e.insert(vec![pending_event.clone()]);
-                }
+                },
                 Entry::Occupied(mut e) => {
                     e.get_mut().push(pending_event.clone());
                 }
