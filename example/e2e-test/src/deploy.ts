@@ -1,6 +1,5 @@
-import {_SERVICE as IEmitterService} from 'dfx-type/emitter-counter/emitter-counter';
-import {_SERVICE as IListener1Service} from 'dfx-type/listener-counter-1/listener-counter-1';
-import {_SERVICE as IListener2Service} from 'dfx-type/listener-counter-2/listener-counter-2';
+import {_SERVICE as IEmitterService} from 'dfx-type/emitter/emitter';
+import {_SERVICE as IListenerService} from 'dfx-type/listener/listener';
 
 import * as fs from "fs";
 import fetch from "node-fetch";
@@ -11,13 +10,11 @@ import {Principal} from "@dfinity/principal";
 export interface ISetup {
     user1: HttpAgent;
     emitterClientUser1: IEmitterService;
-    listener1ClientUser1: IListener1Service;
-    listener2ClientUser1: IListener2Service;
+    listenerClientUser1: IListenerService;
 
     user2: HttpAgent;
     emitterClientUser2: IEmitterService;
-    listener1ClientUser2: IListener1Service;
-    listener2ClientUser2: IListener2Service;
+    listenerClientUser2: IListenerService;
 }
 
 export async function setup(identity1: Identity, identity2: Identity): Promise<ISetup> {
@@ -40,31 +37,23 @@ export async function setup(identity1: Identity, identity2: Identity): Promise<I
     const {
         actor: emitterClientUser1,
         canisterId: canisterId1
-    } = await deployCanister<IEmitterService>('emitter-counter', [], agent1);
-    const emitterClientUser2 = await connectCanister<IEmitterService>('emitter-counter', canisterId1, agent2);
+    } = await deployCanister<IEmitterService>('emitter', [], agent1);
+    const emitterClientUser2 = await connectCanister<IEmitterService>('emitter', canisterId1, agent2);
 
     const {
-        actor: listener1ClientUser1,
+        actor: listenerClientUser1,
         canisterId: canisterId2
-    } = await deployCanister<IListener1Service>('listener-counter-1', [...IDL.encode([IDL.Principal], [canisterId1])], agent1);
-    const listener1ClientUser2 = await connectCanister<IListener1Service>('listener-counter-1', canisterId2, agent2);
-
-    const {
-        actor: listener2ClientUser1,
-        canisterId: canisterId3
-    } = await deployCanister<IListener2Service>('listener-counter-2', [...IDL.encode([IDL.Principal], [canisterId1])], agent1);
-    const listener2ClientUser2 = await connectCanister<IListener2Service>('listener-counter-2', canisterId3, agent2);
+    } = await deployCanister<IListenerService>('listener', [...IDL.encode([IDL.Principal], [canisterId1])], agent1);
+    const listenerClientUser2 = await connectCanister<IListenerService>('listener', canisterId2, agent2);
 
     return {
         user1: agent1,
         emitterClientUser1,
-        listener1ClientUser1,
-        listener2ClientUser1,
+        listenerClientUser1,
 
         user2: agent2,
         emitterClientUser2,
-        listener1ClientUser2,
-        listener2ClientUser2,
+        listenerClientUser2,
     };
 }
 

@@ -1,21 +1,15 @@
 {
   "canisters": {
-    "emitter-counter": {
-      "build": "./buildscripts/emitter-counter.sh",
-      "candid": "../canisters/emitter-counter/can.did",
-      "wasm": "../canisters/emitter-counter/target/wasm32-unknown-unknown/release/emitter-counter-opt.wasm",
+    "emitter": {
+      "build": "./buildscripts/emitter.sh",
+      "candid": "../canisters/emitter/can.did",
+      "wasm": "../canisters/emitter/target/wasm32-unknown-unknown/release/emitter-opt.wasm",
       "type": "custom"
     },
-    "listener-counter-1": {
-      "build": "./buildscripts/listener-counter-1.sh",
-      "candid": "../canisters/listener-counter-1/can.did",
-      "wasm": "../canisters/listener-counter-1/target/wasm32-unknown-unknown/release/listener-counter-1-opt.wasm",
-      "type": "custom"
-    },
-    "listener-counter-2": {
-      "build": "./buildscripts/listener-counter-2.sh",
-      "candid": "../canisters/listener-counter-2/can.did",
-      "wasm": "../canisters/listener-counter-2/target/wasm32-unknown-unknown/release/listener-counter-2-opt.wasm",
+    "listener": {
+      "build": "./buildscripts/listener.sh",
+      "candid": "../canisters/listener/can.did",
+      "wasm": "../canisters/listener/target/wasm32-unknown-unknown/release/listener-opt.wasm",
       "type": "custom"
     }
   },

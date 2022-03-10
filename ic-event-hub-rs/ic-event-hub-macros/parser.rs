@@ -1,5 +1,5 @@
 use syn::parse::{Parse, ParseStream};
-use syn::{Ident, LitStr, Token};
+use syn::{Ident, LitInt, LitStr, Token};
 
 #[derive(Debug)]
 pub struct GuardAssign {
@@ -12,7 +12,9 @@ impl Parse for GuardAssign {
 
         if input.is_empty() {
             return Ok(Self { guard_name: None });
-        } else if lookahead.peek(Ident) {
+        } else if lookahead.peek(LitInt) {
+            let min = input.parse::<LitInt>()?;
+
             let ident = input.parse::<Ident>()?;
             if ident != "guard" {
                 panic!("Only \"guard\" argument allowed (e.g. 'guard = \"function_name\"')");

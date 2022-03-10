@@ -1,54 +1,130 @@
-use std::collections::btree_map::Entry;
+use candid::ser::ValueSerializer;
+use candid::CandidType;
+use std::collections::{btree_map, hash_map};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ic_cdk::export::Principal;
+use ic_cdk::print;
 
 use crate::types::{Event, EventField, EventFilter, RemoteCallEndpoint};
 
-pub type EncodedEventBatch = Vec<u8>;
-pub struct EncodedBatchesBytes {
-    pub endpoint: RemoteCallEndpoint,
-    pub size_bytes: usize,
+#[derive(Debug)]
+pub enum EventHubError {
+    EventHasNoActiveListeners,
+    EventIsTooBig,
+}
+
+pub struct EncodedEventBatch {
+    pub content: Vec<u8>,
+    pub events_count: usize,
+}
+
+impl EncodedEventBatch {
+    pub fn new(content: &[u8]) -> Self {
+        Self {
+            content: Vec::from(content),
+            events_count: 1,
+        }
+    }
+
+    pub fn add_event(&mut self, content: &[u8]) {
+        self.content.extend_from_slice(content);
+        self.events_count += 1;
+    }
 }
 
 /// A struct that associates event topics with subscribed listeners
-#[derive(Default)]
 pub struct EventHub {
-    pub batch_threshold_bytes: usize,
+    pub batch_min_size_bytes: usize,
     pub batch_max_size_bytes: usize,
     pub listeners: HashMap<EventFilter, HashSet<RemoteCallEndpoint>>,
-    pub pending_events: BTreeMap<RemoteCallEndpoint, Vec<Event>>,
-    pub pending_payload_sizes_desc: Vec<EncodedBatchesBytes>,
+    pub pending_batch: HashMap<RemoteCallEndpoint, EncodedEventBatch>,
+    pub ready_batches: BTreeMap<RemoteCallEndpoint, Vec<EncodedEventBatch>>,
 }
 
 impl EventHub {
-    pub fn pop_pending_events(&mut self) -> Option<(RemoteCallEndpoint, Vec<Event>)> {
-        let (endpoint, _) = self.pending_events.iter_mut().next_back()?;
+    pub fn new() -> Self {
+        EventHub {
+            batch_min_size_bytes: 1 * 1024,
+            batch_max_size_bytes: 300 * 1024,
+            listeners: HashMap::default(),
+            pending_batch: HashMap::default(),
+            ready_batches: BTreeMap::default(),
+        }
+    }
+
+    pub fn set_min_batch_size(&mut self, min: usize) {
+        self.batch_min_size_bytes = min;
+    }
+
+    pub fn set_max_batch_size(&mut self, max: usize) {
+        self.batch_max_size_bytes = max;
+    }
+
+    pub fn pop_pending_events(&mut self) -> Option<(RemoteCallEndpoint, Vec<EncodedEventBatch>)> {
+        let (endpoint, _) = self.ready_batches.iter_mut().next_back()?;
 
         let endpoint = endpoint.clone();
-        let events = self.pending_events.remove(&endpoint)?;
+        let events = self.ready_batches.remove(&endpoint).unwrap();
 
         Some((endpoint, events))
     }
 
-    pub fn push_pending_event(&mut self, pending_event: Event) {
+    pub fn push_pending_event(&mut self, pending_event: Event) -> Result<(), EventHubError> {
         let listeners = self.match_event_listeners_by_topics(&pending_event.topics);
 
         if listeners.is_empty() {
-            // when nobody listens to the event it is rejected
-            return;
+            // when nobody listens to the event it is ignored
+            return Err(EventHubError::EventHasNoActiveListeners);
+        }
+
+        let mut event_value_ser = ValueSerializer::new();
+        pending_event
+            .idl_serialize(&mut event_value_ser)
+            .expect("Unable to serialize an event");
+
+        if event_value_ser.get_result().len() >= self.batch_max_size_bytes {
+            return Err(EventHubError::EventIsTooBig);
         }
 
         for listener in listeners {
-            match self.pending_events.entry(listener) {
-                Entry::Vacant(e) => {
-                    e.insert(vec![pending_event.clone()]);
-                },
-                Entry::Occupied(mut e) => {
-                    e.get_mut().push(pending_event.clone());
+            match self.pending_batch.entry(listener.clone()) {
+                hash_map::Entry::Vacant(e) => {
+                    let batch = EncodedEventBatch::new(event_value_ser.get_result());
+
+                    // if the batch is already good to go - add it to ready_batches, otherwise, add to pending
+                    if batch.content.len() >= self.batch_min_size_bytes {
+                        self.add_ready_batch(listener, batch);
+                    } else {
+                        e.insert(batch);
+                    }
+                }
+                hash_map::Entry::Occupied(mut e) => {
+                    let batch = e.get_mut();
+                    let total_size_bytes = batch.content.len() + event_value_ser.get_result().len();
+
+                    print(format!("{}", total_size_bytes).as_str());
+
+                    if total_size_bytes < self.batch_min_size_bytes {
+                        batch.add_event(event_value_ser.get_result());
+                    } else if total_size_bytes >= self.batch_min_size_bytes
+                        && total_size_bytes <= self.batch_max_size_bytes
+                    {
+                        let mut batch = e.remove();
+                        batch.add_event(event_value_ser.get_result());
+
+                        self.add_ready_batch(listener, batch);
+                    } else {
+                        let new_batch = EncodedEventBatch::new(event_value_ser.get_result());
+                        let old_batch = e.insert(new_batch);
+
+                        self.add_ready_batch(listener, old_batch);
+                    }
                 }
             };
         }
+
+        Ok(())
     }
 
     pub fn add_event_listener(
@@ -107,18 +183,39 @@ impl EventHub {
             Ok(())
         }
     }
+
+    fn add_ready_batch(&mut self, listener: RemoteCallEndpoint, batch: EncodedEventBatch) {
+        match self.ready_batches.entry(listener) {
+            btree_map::Entry::Vacant(e) => {
+                e.insert(vec![batch]);
+            }
+            btree_map::Entry::Occupied(mut e) => {
+                e.get_mut().push(batch);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use union_utils::random_principal_test;
-
     use crate::event_hub::EventHub;
     use crate::types::{EventField, EventFilter, RemoteCallEndpoint};
+    use candid::Principal;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    pub fn random_principal_test() -> Principal {
+        Principal::from_slice(
+            &SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+                .to_be_bytes(),
+        )
+    }
 
     #[test]
     fn main_flow_works_fine() {
-        let mut event_hub = EventHub::default();
+        let mut event_hub = EventHub::new();
 
         let field_1 = EventField {
             name: String::from("1"),

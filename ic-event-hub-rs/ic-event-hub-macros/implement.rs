@@ -14,7 +14,7 @@ pub fn implement_event_emitter_impl(_: TokenStream) -> TokenStream {
                 if let Some(s) = &mut _EVENT_HUB {
                     s
                 } else {
-                    _EVENT_HUB = Some(ic_event_hub::event_hub::EventHub::default());
+                    _EVENT_HUB = Some(ic_event_hub::event_hub::EventHub::new());
                     get_event_hub()
                 }
             }
@@ -24,8 +24,8 @@ pub fn implement_event_emitter_impl(_: TokenStream) -> TokenStream {
             ic_event_hub::fns::emit_impl(event, get_event_hub());
         }
 
-        pub fn send_events(batch_size: usize) {
-            ic_event_hub::fns::send_events_impl(batch_size, get_event_hub());
+        pub fn send_events() {
+            ic_event_hub::fns::send_events_impl(get_event_hub());
         }
     };
 
