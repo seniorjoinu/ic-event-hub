@@ -1,8 +1,8 @@
-use ic_cdk::export::candid::{export_service, Principal};
-use ic_cdk::{caller, id, print};
+use ic_cdk::export::candid::export_service;
 use ic_cdk_macros::{heartbeat, init, query, update};
 
-use ic_event_hub_macros::{implement_become_event_listener, implement_event_emitter, Event};
+use ic_event_hub::{implement_event_emitter, implement_subscribe};
+use ic_event_hub_macros::Event;
 
 // ------------- MAIN LOGIC -------------------
 
@@ -37,8 +37,8 @@ pub fn tick() {
 
 // ------------------ EVENT HUB ------------------
 
-implement_event_emitter!();
-implement_become_event_listener!();
+implement_event_emitter!(1_000_000_000 * 20, 500 * 1024);
+implement_subscribe!();
 
 // ------------------ STATE ----------------------
 

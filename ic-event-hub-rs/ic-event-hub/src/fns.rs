@@ -1,21 +1,24 @@
 use crate::event_hub::EventHub;
 use crate::types::{
-    AddEventListenersRequest, BecomeEventListenerRequest, Event, GetEventListenersRequest,
-    GetEventListenersResponse, IEvent, RemoveEventListenersRequest, StopBeingEventListenerRequest,
+    Event, GetSubscribersRequest, GetSubscribersResponse, IEvent, SubscribeRequest,
+    UnsubscribeRequest,
 };
 use candid::ser::TypeSerialize;
 use candid::CandidType;
 use futures::future;
 use ic_cdk::api::call::call_raw;
+use ic_cdk::api::time;
 use ic_cdk::{caller, id, print, trap};
 
 pub fn emit_impl(event: impl IEvent, hub: &mut EventHub) {
     print(format!("[Canister {}] - ic_event_hub.emit()", id()));
 
-    hub.push_pending_event(event.to_event());
+    hub.push_pending_event(event.to_event(), time());
 }
 
 pub fn send_events_impl(hub: &mut EventHub) {
+    hub.transform_pending_to_ready_by_time(time());
+
     let mut emit_futures = vec![];
 
     loop {
@@ -62,60 +65,31 @@ pub fn send_events_impl(hub: &mut EventHub) {
     }
 }
 
-pub fn add_event_listeners_impl(request: AddEventListenersRequest, hub: &mut EventHub) {
-    for listener in request.listeners.into_iter() {
-        hub.add_event_listener(
-            listener.filter,
-            listener.endpoint.method_name,
-            listener.endpoint.canister_id,
-        );
+pub fn subscribe_impl(request: SubscribeRequest, hub: &mut EventHub) {
+    for callback in request.callbacks.into_iter() {
+        hub.add_event_listener(callback.filter, callback.method_name, caller());
     }
 }
 
-pub fn remove_event_listeners_impl(request: RemoveEventListenersRequest, hub: &mut EventHub) {
-    for (idx, listener) in request.listeners.into_iter().enumerate() {
-        let res = hub.remove_event_listener(
-            &listener.filter,
-            listener.endpoint.method_name,
-            listener.endpoint.canister_id,
-        );
-
-        if res.is_err() {
-            trap(
-                format!(
-                    "Unable to remove listener #{} - {}",
-                    idx,
-                    res.err().unwrap()
-                )
-                .as_str(),
-            );
-        }
-    }
-}
-
-pub fn become_event_listener_impl(request: BecomeEventListenerRequest, hub: &mut EventHub) {
-    for listener in request.listeners.into_iter() {
-        hub.add_event_listener(listener.filter, listener.callback_method_name, caller());
-    }
-}
-
-pub fn get_event_listeners_impl(
-    request: GetEventListenersRequest,
+pub fn get_subscriers_impl(
+    request: GetSubscribersRequest,
     hub: &mut EventHub,
-) -> GetEventListenersResponse {
+) -> GetSubscribersResponse {
     let mut listeners = vec![];
 
     for filter in request.filters.iter() {
         listeners.push(hub.match_event_listeners(filter));
     }
 
-    GetEventListenersResponse { listeners }
+    GetSubscribersResponse {
+        subscribers: listeners,
+    }
 }
 
-pub fn stop_being_event_listener_impl(request: StopBeingEventListenerRequest, hub: &mut EventHub) {
-    for (idx, listener) in request.listeners.into_iter().enumerate() {
+pub fn unsubscribe_impl(request: UnsubscribeRequest, hub: &mut EventHub) {
+    for (idx, listener) in request.callbacks.into_iter().enumerate() {
         let res =
-            hub.remove_event_listener(&listener.filter, listener.callback_method_name, caller());
+            hub.remove_event_listener(&listener.filter, listener.method_name, caller());
 
         if res.is_err() {
             trap(

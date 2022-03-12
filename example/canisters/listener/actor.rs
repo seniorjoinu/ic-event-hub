@@ -2,9 +2,9 @@ use ic_cdk::export::candid::{export_service, Principal};
 use ic_cdk::{print, trap};
 use ic_cdk_macros::{init, query, update};
 
-use ic_event_hub::api::EventHubClient;
-use ic_event_hub::types::{BecomeEventListenerRequest, EventFilter, EventListener};
-use ic_event_hub::types::{Event, IEvent, IEventFilter};
+use ic_event_hub::api::IEventHubClient;
+use ic_event_hub::types::{CallbackInfo, EventFilter, SubscribeRequest};
+use ic_event_hub::types::{Event, IEvent};
 use ic_event_hub_macros::Event;
 
 // ------------- MAIN LOGIC -------------------
@@ -33,13 +33,12 @@ fn init(emitter_canister_id: Principal) {
 
 #[update]
 async fn start_listening() {
-    let client = EventHubClient::new(get_state().emitter_canister_id);
-
-    client
-        ._become_event_listener(BecomeEventListenerRequest {
-            listeners: vec![EventListener {
+    get_state()
+        .emitter_canister_id
+        .subscribe(SubscribeRequest {
+            callbacks: vec![CallbackInfo {
                 filter: EventFilter::empty(),
-                callback_method_name: String::from("events_callback"),
+                method_name: String::from("events_callback"),
             }],
         })
         .await

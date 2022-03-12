@@ -11,7 +11,8 @@ repository = "https://github.com/seniorjoinu/ic-event-hub"
 
 [dependencies]
 ic-cdk = "0.3.2"
-candid = { path = "../../candid/rust/candid" }
+candid = "0.7.12"
 serde = "1.0.126"
 futures = "0.3.19"
 leb128 = "0.2.5"
+async-trait = "0.1.52"

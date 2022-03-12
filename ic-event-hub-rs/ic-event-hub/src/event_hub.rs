@@ -1,67 +1,48 @@
 use candid::ser::ValueSerializer;
 use candid::CandidType;
-use std::collections::{btree_map, hash_map};
+use std::collections::{btree_map, hash_map, BinaryHeap};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ic_cdk::export::Principal;
-use ic_cdk::print;
 
-use crate::types::{Event, EventField, EventFilter, RemoteCallEndpoint};
-
-#[derive(Debug)]
-pub enum EventHubError {
-    EventHasNoActiveListeners,
-    EventIsTooBig,
-}
-
-pub struct EncodedEventBatch {
-    pub content: Vec<u8>,
-    pub events_count: usize,
-}
-
-impl EncodedEventBatch {
-    pub fn new(content: &[u8]) -> Self {
-        Self {
-            content: Vec::from(content),
-            events_count: 1,
-        }
-    }
-
-    pub fn add_event(&mut self, content: &[u8]) {
-        self.content.extend_from_slice(content);
-        self.events_count += 1;
-    }
-}
+use crate::types::{
+    CallbackInfoExt, EncodedEventBatch, Event, EventField, EventFilter, EventHubError,
+    RemoteCallEndpoint, TimestampedRemoteCallEndpoint,
+};
 
 /// A struct that associates event topics with subscribed listeners
 pub struct EventHub {
-    pub batch_min_size_bytes: usize,
-    pub batch_max_size_bytes: usize,
-    pub listeners: HashMap<EventFilter, HashSet<RemoteCallEndpoint>>,
-    pub pending_batch: HashMap<RemoteCallEndpoint, EncodedEventBatch>,
-    pub ready_batches: BTreeMap<RemoteCallEndpoint, Vec<EncodedEventBatch>>,
+    pub(crate) batch_making_duration_nano: u64,
+    pub(crate) batch_max_size_bytes: usize,
+    pub(crate) listeners: HashMap<EventFilter, HashSet<RemoteCallEndpoint>>,
+    pub(crate) pending_batch: HashMap<RemoteCallEndpoint, EncodedEventBatch>,
+    pub(crate) pending_batch_queue: BinaryHeap<TimestampedRemoteCallEndpoint>,
+    pub(crate) ready_batches: BTreeMap<RemoteCallEndpoint, Vec<EncodedEventBatch>>,
 }
 
 impl EventHub {
-    pub fn new() -> Self {
+    pub fn new(batch_making_duration_nano: u64, batch_max_size_bytes: usize) -> Self {
         EventHub {
-            batch_min_size_bytes: 1 * 1024,
-            batch_max_size_bytes: 300 * 1024,
+            batch_making_duration_nano,
+            batch_max_size_bytes,
             listeners: HashMap::default(),
             pending_batch: HashMap::default(),
+            pending_batch_queue: BinaryHeap::new(),
             ready_batches: BTreeMap::default(),
         }
     }
 
-    pub fn set_min_batch_size(&mut self, min: usize) {
-        self.batch_min_size_bytes = min;
+    pub fn set_batch_making_duration_nano(&mut self, new_duration: u64) {
+        self.batch_making_duration_nano = new_duration;
     }
 
     pub fn set_max_batch_size(&mut self, max: usize) {
         self.batch_max_size_bytes = max;
     }
 
-    pub fn pop_pending_events(&mut self) -> Option<(RemoteCallEndpoint, Vec<EncodedEventBatch>)> {
+    pub(crate) fn pop_pending_events(
+        &mut self,
+    ) -> Option<(RemoteCallEndpoint, Vec<EncodedEventBatch>)> {
         let (endpoint, _) = self.ready_batches.iter_mut().next_back()?;
 
         let endpoint = endpoint.clone();
@@ -70,7 +51,11 @@ impl EventHub {
         Some((endpoint, events))
     }
 
-    pub fn push_pending_event(&mut self, pending_event: Event) -> Result<(), EventHubError> {
+    pub(crate) fn push_pending_event(
+        &mut self,
+        pending_event: Event,
+        timestamp: u64,
+    ) -> Result<(), EventHubError> {
         let listeners = self.match_event_listeners_by_topics(&pending_event.topics);
 
         if listeners.is_empty() {
@@ -90,33 +75,32 @@ impl EventHub {
         for listener in listeners {
             match self.pending_batch.entry(listener.clone()) {
                 hash_map::Entry::Vacant(e) => {
-                    let batch = EncodedEventBatch::new(event_value_ser.get_result());
+                    let batch = EncodedEventBatch::new(event_value_ser.get_result(), timestamp);
 
-                    // if the batch is already good to go - add it to ready_batches, otherwise, add to pending
-                    if batch.content.len() >= self.batch_min_size_bytes {
-                        self.add_ready_batch(listener, batch);
-                    } else {
-                        e.insert(batch);
-                    }
+                    e.insert(batch);
+
+                    self.pending_batch_queue
+                        .push(TimestampedRemoteCallEndpoint {
+                            timestamp,
+                            endpoint: listener.clone(),
+                        });
                 }
                 hash_map::Entry::Occupied(mut e) => {
                     let batch = e.get_mut();
                     let total_size_bytes = batch.content.len() + event_value_ser.get_result().len();
 
-                    print(format!("{}", total_size_bytes).as_str());
-
-                    if total_size_bytes < self.batch_min_size_bytes {
+                    if total_size_bytes <= self.batch_max_size_bytes {
                         batch.add_event(event_value_ser.get_result());
-                    } else if total_size_bytes >= self.batch_min_size_bytes
-                        && total_size_bytes <= self.batch_max_size_bytes
-                    {
-                        let mut batch = e.remove();
-                        batch.add_event(event_value_ser.get_result());
-
-                        self.add_ready_batch(listener, batch);
                     } else {
-                        let new_batch = EncodedEventBatch::new(event_value_ser.get_result());
+                        let new_batch =
+                            EncodedEventBatch::new(event_value_ser.get_result(), timestamp);
                         let old_batch = e.insert(new_batch);
+
+                        self.pending_batch_queue
+                            .push(TimestampedRemoteCallEndpoint {
+                                timestamp,
+                                endpoint: listener.clone(),
+                            });
 
                         self.add_ready_batch(listener, old_batch);
                     }
@@ -125,6 +109,31 @@ impl EventHub {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn transform_pending_to_ready_by_time(&mut self, timestamp: u64) {
+        loop {
+            let cur_opt = self.pending_batch_queue.peek();
+            if cur_opt.is_none() {
+                break;
+            }
+
+            let cur = cur_opt.unwrap();
+
+            if cur.timestamp + self.batch_making_duration_nano > timestamp {
+                break;
+            }
+
+            let cur = self.pending_batch_queue.pop().unwrap();
+            let batch = self.pending_batch.get(&cur.endpoint).unwrap();
+
+            if batch.timestamp != cur.timestamp {
+                continue;
+            }
+
+            let batch = self.pending_batch.remove(&cur.endpoint).unwrap();
+            self.add_ready_batch(cur.endpoint, batch);
+        }
     }
 
     pub fn add_event_listener(
@@ -184,6 +193,10 @@ impl EventHub {
         }
     }
 
+    pub fn get_listeners(&self) -> &HashMap<EventFilter, HashSet<RemoteCallEndpoint>> {
+        &self.listeners
+    }
+
     fn add_ready_batch(&mut self, listener: RemoteCallEndpoint, batch: EncodedEventBatch) {
         match self.ready_batches.entry(listener) {
             btree_map::Entry::Vacant(e) => {
@@ -215,7 +228,7 @@ mod tests {
 
     #[test]
     fn main_flow_works_fine() {
-        let mut event_hub = EventHub::new();
+        let mut event_hub = EventHub::new(0, 0);
 
         let field_1 = EventField {
             name: String::from("1"),

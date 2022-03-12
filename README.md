@@ -1,6 +1,6 @@
 ## IC Event Hub
 
-A rust library which enables event-based pub/sub for IC canisters
+A rust library that enables efficient event-based pub/sub for IC canisters
 
 ### Motivation
 
@@ -26,8 +26,8 @@ Let's imagine the following example use-case:
   secure random
 * there is the "Lucky People Fund" canister (next Fund), that mints its own token to everyone who is lucky enough to
   flip heads three times in a row
-* there is also the "Joinu's Coin Flipper Ledger" canister (next Ledger), which collects the history of only those coin
-  flips made by Joinu's principal
+* there is also the "Alex's Coin Flipper Ledger" canister (next Ledger), which collects the history of only those coin
+  flips made by Alex
 
 Our goal is to make them all work together, only providing them with each others canister-id and an event structure,
 nothing more. No sharing of function signatures or even function names.
@@ -49,16 +49,15 @@ pub struct FlipEvent {
 ```
 
 This `FlipEvent` definition looks pretty normal for rust, the only interesting things are
-annotations: `#[derive(Event)]`
-and `#[topic]`. The first one is a derive macro, which will:
+annotations: `#[derive(Event)]` and `#[topic]`. The first one is a derive macro, which will:
 
 1. generate an implementation for `ic_event_hub::IEvent` trait, which we need in order to serialize this event in a way
    that is optimized for topic indexing; `#[topic]` annotation is used exactly for that - to mark fields, which could be
-   used by a listener to specify what updates does it want to receive precisely
+   used by a listener to specify what updates it wants to receive precisely
 2. generate a `FlipEventFilter` struct for our `FlipEvent`, that makes it easier for listeners to use when they
    subscribe for updates.
 
-Precisely the macro will expand into this code:
+The macro will expand into this code:
 
 ```rust
 pub struct FlipEvent {
@@ -277,13 +276,15 @@ async fn start_listening_to_flipper_events() {
 
 // you should check handler endpoint, so it could be called only by the canister you're listening to
 #[ic_cdk_macros::update(guard = "flipper_guard")]
-async fn _handle_flipper_event(event: ic_event_hub::types::Event) {
-    // check the event name and if it's good - react the way you like
-    if event.get_name().as_str() == "FlipEvent" {
-        let ev: FlipEvent = FlipEvent::from_event(event);
-    
-        if _won_3_times_in_a_row(ev.flipper) {
-            _mint_tokens(ev.flipper, 100).await;
+async fn _handle_flipper_event(events: Vec<ic_event_hub::types::Event>) {
+    for event in events {
+        // check the event name and if it's good - react the way you like
+        if event.get_name().as_str() == "FlipEvent" {
+            let ev: FlipEvent = FlipEvent::from_event(event);
+
+            if _won_3_times_in_a_row(ev.flipper) {
+                _mint_tokens(ev.flipper, 100).await;
+            }
         }
     }
 }
@@ -323,9 +324,9 @@ pub struct FlipEvent {
 async fn start_listening_to_flipper_events() {
     let flipper_client = ic_event_hub::api::EventHubClient::new(_get_flipper_canister_id());
     
-    for joinu_principal in _get_joinu_principals() {
+    for alex_principal in _get_alex_principals() {
         let flip_event_filter = FlipEventFilter {
-            flipper: Some(joinu_principal),
+            flipper: Some(alex_principal),
         };
 
         flipper_client._become_event_listener(BecomeEventListenerRequest {
@@ -342,12 +343,14 @@ async fn start_listening_to_flipper_events() {
 
 // again, don't forget to check the caller
 #[ic_cdk_macros::update(guard = "flipper_guard")]
-async fn _handle_flipper_event(event: ic_event_hub::types::Event) {
-    if event.get_name().as_str() == "FlipEvent" {
-        // here we will now only receive events of flips made by Joinu!
-        let ev: FlipEvent = FlipEvent::from_event(event);
-    
-        _store_history_entry(ev);
+fn _handle_flipper_event(events: Vec<ic_event_hub::types::Event>) {
+    for event in events {
+        if event.get_name().as_str() == "FlipEvent" {
+            // here we will now only receive events of flips made by Joinu!
+            let ev: FlipEvent = FlipEvent::from_event(event);
+
+            _store_history_entry(ev);
+        }
     }
 }
 ```

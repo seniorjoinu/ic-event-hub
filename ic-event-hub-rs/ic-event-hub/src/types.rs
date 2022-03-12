@@ -1,22 +1,20 @@
+use std::cmp::{max, min, Ordering};
 use std::collections::BTreeSet;
 
-use candid::{decode_one, CandidType as CandidTypeX, Deserialize};
-use ic_cdk::export::candid::CandidType;
+use candid::{decode_one, CandidType, Deserialize};
 use ic_cdk::export::Principal;
 
 use crate::EVENT_NAME_FIELD;
 
 /// Serialized representation of some field of an event
-#[derive(
-    Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize, CandidTypeX,
-)]
+#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Clone, Debug, CandidType, Deserialize)]
 pub struct EventField {
     pub name: String,
     pub value: Vec<u8>,
 }
 
 /// Serialized event structure
-#[derive(Clone, Debug, CandidType, Deserialize, CandidTypeX)]
+#[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct Event {
     pub topics: BTreeSet<EventField>,
     pub values: Vec<EventField>,
@@ -24,7 +22,6 @@ pub struct Event {
 
 impl Event {
     /// Finds a serialized name of the event struct, deserializes it and returns
-    #[inline(always)]
     pub fn get_name(&self) -> String {
         let encoded_name = self
             .topics
@@ -65,41 +62,130 @@ pub trait IEventFilter {
 }
 
 #[derive(CandidType, Deserialize)]
-pub struct EventListener {
+pub struct CallbackInfo {
     pub filter: EventFilter,
-    pub callback_method_name: String,
+    pub method_name: String,
 }
 
 #[derive(CandidType, Deserialize)]
-pub struct EventListenerExt {
+pub struct CallbackInfoExt {
     pub filter: EventFilter,
     pub endpoint: RemoteCallEndpoint,
+}
+
+#[derive(Debug)]
+pub enum EventHubError {
+    EventHasNoActiveListeners,
+    EventIsTooBig,
+}
+
+pub struct EncodedEventBatch {
+    pub content: Vec<u8>,
+    pub events_count: usize,
+    pub timestamp: u64,
+}
+
+impl EncodedEventBatch {
+    pub fn new(content: &[u8], timestamp: u64) -> Self {
+        Self {
+            content: Vec::from(content),
+            events_count: 1,
+            timestamp,
+        }
+    }
+
+    pub fn add_event(&mut self, content: &[u8]) {
+        self.content.extend_from_slice(content);
+        self.events_count += 1;
+    }
+}
+
+#[derive(Eq)]
+pub struct TimestampedRemoteCallEndpoint {
+    pub timestamp: u64,
+    pub endpoint: RemoteCallEndpoint,
+}
+
+impl PartialEq for TimestampedRemoteCallEndpoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.timestamp.eq(&other.timestamp) && self.endpoint.eq(&other.endpoint)
+    }
+}
+
+impl PartialOrd for TimestampedRemoteCallEndpoint {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.timestamp
+            .partial_cmp(&other.timestamp)
+            .map(|it| it.reverse())
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        self.timestamp.gt(&other.timestamp)
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        self.timestamp.ge(&other.timestamp)
+    }
+
+    fn gt(&self, other: &Self) -> bool {
+        self.timestamp.lt(&other.timestamp)
+    }
+
+    fn ge(&self, other: &Self) -> bool {
+        self.timestamp.le(&other.timestamp)
+    }
+}
+
+impl Ord for TimestampedRemoteCallEndpoint {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.timestamp.cmp(&other.timestamp).reverse()
+    }
+
+    fn max(self, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        max(self, other)
+    }
+
+    fn min(self, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        min(self, other)
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self
+    where
+        Self: Sized,
+    {
+        if self.timestamp < max.timestamp {
+            max
+        } else if self.timestamp > min.timestamp {
+            min
+        } else {
+            self
+        }
+    }
 }
 
 // ---------- API TYPES ---------------
 
 #[derive(CandidType, Deserialize)]
-pub struct AddEventListenersRequest {
-    pub listeners: Vec<EventListenerExt>,
+pub struct SubscribeRequest {
+    pub callbacks: Vec<CallbackInfo>,
 }
 
-pub type RemoveEventListenersRequest = AddEventListenersRequest;
+pub type UnsubscribeRequest = SubscribeRequest;
 
 #[derive(CandidType, Deserialize)]
-pub struct BecomeEventListenerRequest {
-    pub listeners: Vec<EventListener>,
-}
-
-pub type StopBeingEventListenerRequest = BecomeEventListenerRequest;
-
-#[derive(CandidType, Deserialize)]
-pub struct GetEventListenersRequest {
+pub struct GetSubscribersRequest {
     pub filters: Vec<EventFilter>,
 }
 
 #[derive(CandidType, Deserialize)]
-pub struct GetEventListenersResponse {
-    pub listeners: Vec<Vec<RemoteCallEndpoint>>,
+pub struct GetSubscribersResponse {
+    pub subscribers: Vec<Vec<RemoteCallEndpoint>>,
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, CandidType, Deserialize)]
