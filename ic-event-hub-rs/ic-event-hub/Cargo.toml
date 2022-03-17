@@ -1,6 +1,6 @@
 [package]
 name = "ic-event-hub"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
 description = "Event-based pub/sub for IC canisters"
@@ -10,7 +10,7 @@ readme = "../../README.md"
 repository = "https://github.com/seniorjoinu/ic-event-hub"
 
 [dependencies]
-ic-cdk = "0.3.2"
+ic-cdk = "0.4.0"
 candid = "0.7.12"
 serde = "1.0.126"
 futures = "0.3.19"

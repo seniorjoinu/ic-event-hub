@@ -6,8 +6,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use ic_cdk::export::Principal;
 
 use crate::types::{
-    CallbackInfoExt, EncodedEventBatch, Event, EventField, EventFilter, EventHubError,
-    RemoteCallEndpoint, TimestampedRemoteCallEndpoint,
+    EncodedEventBatch, Event, EventField, EventFilter, EventHubError, RemoteCallEndpoint,
+    TimestampedRemoteCallEndpoint,
 };
 
 /// A struct that associates event topics with subscribed listeners
