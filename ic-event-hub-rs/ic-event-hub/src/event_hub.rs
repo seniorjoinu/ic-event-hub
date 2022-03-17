@@ -1,15 +1,141 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use candid::ser::ValueSerializer;
+use candid::CandidType;
+use std::collections::{btree_map, hash_map, BinaryHeap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ic_cdk::export::Principal;
-use union_utils::RemoteCallEndpoint;
 
-use crate::types::{EventField, EventFilter};
+use crate::types::{
+    EncodedEventBatch, Event, EventField, EventFilter, EventHubError, RemoteCallEndpoint,
+    TimestampedRemoteCallEndpoint,
+};
 
 /// A struct that associates event topics with subscribed listeners
-#[derive(Default)]
-pub struct EventHub(BTreeMap<EventFilter, HashSet<RemoteCallEndpoint>>);
+pub struct EventHub {
+    pub(crate) batch_making_duration_nano: u64,
+    pub(crate) batch_max_size_bytes: usize,
+    pub(crate) listeners: HashMap<EventFilter, HashSet<RemoteCallEndpoint>>,
+    pub(crate) pending_batch: HashMap<RemoteCallEndpoint, EncodedEventBatch>,
+    pub(crate) pending_batch_queue: BinaryHeap<TimestampedRemoteCallEndpoint>,
+    pub(crate) ready_batches: BTreeMap<RemoteCallEndpoint, Vec<EncodedEventBatch>>,
+}
 
 impl EventHub {
+    pub fn new(batch_making_duration_nano: u64, batch_max_size_bytes: usize) -> Self {
+        EventHub {
+            batch_making_duration_nano,
+            batch_max_size_bytes,
+            listeners: HashMap::default(),
+            pending_batch: HashMap::default(),
+            pending_batch_queue: BinaryHeap::new(),
+            ready_batches: BTreeMap::default(),
+        }
+    }
+
+    pub fn set_batch_making_duration_nano(&mut self, new_duration: u64) {
+        self.batch_making_duration_nano = new_duration;
+    }
+
+    pub fn set_max_batch_size(&mut self, max: usize) {
+        self.batch_max_size_bytes = max;
+    }
+
+    pub(crate) fn pop_pending_events(
+        &mut self,
+    ) -> Option<(RemoteCallEndpoint, Vec<EncodedEventBatch>)> {
+        let (endpoint, _) = self.ready_batches.iter_mut().next_back()?;
+
+        let endpoint = endpoint.clone();
+        let events = self.ready_batches.remove(&endpoint).unwrap();
+
+        Some((endpoint, events))
+    }
+
+    pub(crate) fn push_pending_event(
+        &mut self,
+        pending_event: Event,
+        timestamp: u64,
+    ) -> Result<(), EventHubError> {
+        let listeners = self.match_event_listeners_by_topics(&pending_event.topics);
+
+        if listeners.is_empty() {
+            // when nobody listens to the event it is ignored
+            return Err(EventHubError::EventHasNoActiveListeners);
+        }
+
+        let mut event_value_ser = ValueSerializer::new();
+        pending_event
+            .idl_serialize(&mut event_value_ser)
+            .expect("Unable to serialize an event");
+
+        if event_value_ser.get_result().len() >= self.batch_max_size_bytes {
+            return Err(EventHubError::EventIsTooBig);
+        }
+
+        for listener in listeners {
+            match self.pending_batch.entry(listener.clone()) {
+                hash_map::Entry::Vacant(e) => {
+                    let batch = EncodedEventBatch::new(event_value_ser.get_result(), timestamp);
+
+                    e.insert(batch);
+
+                    self.pending_batch_queue
+                        .push(TimestampedRemoteCallEndpoint {
+                            timestamp,
+                            endpoint: listener.clone(),
+                        });
+                }
+                hash_map::Entry::Occupied(mut e) => {
+                    let batch = e.get_mut();
+                    let total_size_bytes = batch.content.len() + event_value_ser.get_result().len();
+
+                    if total_size_bytes <= self.batch_max_size_bytes {
+                        batch.add_event(event_value_ser.get_result());
+                    } else {
+                        let new_batch =
+                            EncodedEventBatch::new(event_value_ser.get_result(), timestamp);
+                        let old_batch = e.insert(new_batch);
+
+                        self.pending_batch_queue
+                            .push(TimestampedRemoteCallEndpoint {
+                                timestamp,
+                                endpoint: listener.clone(),
+                            });
+
+                        self.add_ready_batch(listener, old_batch);
+                    }
+                }
+            };
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn transform_pending_to_ready_by_time(&mut self, timestamp: u64) {
+        loop {
+            let cur_opt = self.pending_batch_queue.peek();
+            if cur_opt.is_none() {
+                break;
+            }
+
+            let cur = cur_opt.unwrap();
+
+            if cur.timestamp + self.batch_making_duration_nano > timestamp {
+                break;
+            }
+
+            let cur = self.pending_batch_queue.pop().unwrap();
+            let batch = self.pending_batch.get(&cur.endpoint).unwrap();
+
+            if batch.timestamp != cur.timestamp {
+                continue;
+            }
+
+            let batch = self.pending_batch.remove(&cur.endpoint).unwrap();
+            self.add_ready_batch(cur.endpoint, batch);
+        }
+    }
+
     pub fn add_event_listener(
         &mut self,
         filter: EventFilter,
@@ -21,12 +147,11 @@ impl EventHub {
             method_name: event_listener_method_name,
         };
 
-        let listeners = self.0.entry(filter).or_insert_with(HashSet::new);
+        let listeners = self.listeners.entry(filter).or_insert_with(HashSet::new);
 
         listeners.insert(listener);
     }
 
-    #[inline(always)]
     pub fn match_event_listeners(&self, filter: &EventFilter) -> Vec<RemoteCallEndpoint> {
         self.match_event_listeners_by_topics(&filter.0)
     }
@@ -35,7 +160,7 @@ impl EventHub {
         &self,
         topics: &BTreeSet<EventField>,
     ) -> Vec<RemoteCallEndpoint> {
-        self.0
+        self.listeners
             .iter()
             .filter(|&entry| entry.0 .0.is_subset(topics))
             .map(|entry| entry.1.clone())
@@ -50,7 +175,7 @@ impl EventHub {
         caller: Principal,
     ) -> Result<(), String> {
         let listeners = self
-            .0
+            .listeners
             .get_mut(filter)
             .ok_or_else(|| String::from("No such filter"))?;
 
@@ -67,18 +192,43 @@ impl EventHub {
             Ok(())
         }
     }
+
+    pub fn get_listeners(&self) -> &HashMap<EventFilter, HashSet<RemoteCallEndpoint>> {
+        &self.listeners
+    }
+
+    fn add_ready_batch(&mut self, listener: RemoteCallEndpoint, batch: EncodedEventBatch) {
+        match self.ready_batches.entry(listener) {
+            btree_map::Entry::Vacant(e) => {
+                e.insert(vec![batch]);
+            }
+            btree_map::Entry::Occupied(mut e) => {
+                e.get_mut().push(batch);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use union_utils::{random_principal_test, RemoteCallEndpoint};
-
     use crate::event_hub::EventHub;
-    use crate::types::{EventField, EventFilter};
+    use crate::types::{EventField, EventFilter, RemoteCallEndpoint};
+    use candid::Principal;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    pub fn random_principal_test() -> Principal {
+        Principal::from_slice(
+            &SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+                .to_be_bytes(),
+        )
+    }
 
     #[test]
     fn main_flow_works_fine() {
-        let mut event_hub = EventHub::default();
+        let mut event_hub = EventHub::new(0, 0);
 
         let field_1 = EventField {
             name: String::from("1"),

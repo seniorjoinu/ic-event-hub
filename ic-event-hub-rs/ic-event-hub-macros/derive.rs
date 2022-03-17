@@ -134,7 +134,7 @@ pub fn event_macro_impl(input: TokenStream) -> TokenStream {
             }
         }
 
-        #[cfg_attr(test, derive(Debug))]
+        #[derive(Debug)]
         pub struct #filter_name {
             #topics_filter
         }
