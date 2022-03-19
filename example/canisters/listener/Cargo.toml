@@ -11,6 +11,7 @@ path = "actor.rs"
 [dependencies]
 ic-cdk = "0.4.0"
 ic-cdk-macros = "0.4.0"
+candid = "0.7.12"
 serde = "1.0.126"
 ic-event-hub = { path = "../../../ic-event-hub-rs/ic-event-hub" }
 ic-event-hub-macros = { path = "../../../ic-event-hub-rs/ic-event-hub-macros" }

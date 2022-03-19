@@ -1,8 +1,7 @@
 ### IC Event Hub usage example
 
-The example shows how a single emitter could emit the same event, but in reality send them only to those listeners,
-which are subscribed to it. Emitter is a counter canister, which gets incremented by a user. Listeners are also counter
-canisters, but they mirror the emitter's canister state only when they need to.
+This example shows how does event batching work. This is a special functionality, that helps save cycles, by merging
+multiple messages into one batch and sending them all at once.
 
 It contains:
 

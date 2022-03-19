@@ -1,5 +1,5 @@
 service : (principal) -> {
     "start_listening" : () -> ();
-    "get_counter_value" : () -> (nat64) query;
-    "get_times_events_callback_triggered" : () -> (nat64) query;
+    "get_events_received" : () -> (nat64) query;
+    "get_batches_received" : () -> (nat64) query;
 }

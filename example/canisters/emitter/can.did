@@ -1,4 +1,4 @@
 service : {
-    "mirror" : () -> ();
-    "get_counter_value" : () -> (nat64) query;
+    "mirror" : (blob) -> ();
+    "get_requests_count" : () -> (nat64) query;
 }

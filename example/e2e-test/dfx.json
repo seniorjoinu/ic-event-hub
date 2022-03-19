@@ -1,21 +1,16 @@
 {
   "canisters": {
     "emitter": {
-      "build": "./buildscripts/emitter.sh",
+      "build": "../canisters/emitter/build.sh",
       "candid": "../canisters/emitter/can.did",
       "wasm": "../canisters/emitter/target/wasm32-unknown-unknown/release/emitter-opt.wasm",
       "type": "custom"
     },
     "listener": {
-      "build": "./buildscripts/listener.sh",
+      "build": "../canisters/listener/build.sh",
       "candid": "../canisters/listener/can.did",
       "wasm": "../canisters/listener/target/wasm32-unknown-unknown/release/listener-opt.wasm",
       "type": "custom"
-    }
-  },
-  "defaults": {
-    "build": {
-      "packtool": ""
     }
   },
   "dfx": "0.9.2",

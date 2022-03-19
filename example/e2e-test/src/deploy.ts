@@ -8,62 +8,34 @@ import {IDL} from "@dfinity/candid";
 import {Principal} from "@dfinity/principal";
 
 export interface ISetup {
-    user1: HttpAgent;
-    emitterClientUser1: IEmitterService;
-    listenerClientUser1: IListenerService;
-
-    user2: HttpAgent;
-    emitterClientUser2: IEmitterService;
-    listenerClientUser2: IListenerService;
+    agent: HttpAgent;
+    emitterService: IEmitterService;
+    listenerService: IListenerService;
 }
 
-export async function setup(identity1: Identity, identity2: Identity): Promise<ISetup> {
-    const agent1 = new HttpAgent({
+export async function setup(identity: Identity): Promise<ISetup> {
+    const agent = new HttpAgent({
         host: 'http://localhost:8000/',
         // @ts-ignore
         fetch,
-        identity: identity1
+        identity,
     });
-    await agent1.fetchRootKey();
-
-    const agent2 = new HttpAgent({
-        host: 'http://localhost:8000/',
-        // @ts-ignore
-        fetch,
-        identity: identity2
-    });
-    await agent2.fetchRootKey();
+    await agent.fetchRootKey();
 
     const {
-        actor: emitterClientUser1,
-        canisterId: canisterId1
-    } = await deployCanister<IEmitterService>('emitter', [], agent1);
-    const emitterClientUser2 = await connectCanister<IEmitterService>('emitter', canisterId1, agent2);
+        actor: emitterService,
+        canisterId: emitterCanisterId
+    } = await deployCanister<IEmitterService>('emitter', [], agent);
 
     const {
-        actor: listenerClientUser1,
-        canisterId: canisterId2
-    } = await deployCanister<IListenerService>('listener', [...IDL.encode([IDL.Principal], [canisterId1])], agent1);
-    const listenerClientUser2 = await connectCanister<IListenerService>('listener', canisterId2, agent2);
+        actor: listenerService
+    } = await deployCanister<IListenerService>('listener', [...IDL.encode([IDL.Principal], [emitterCanisterId])], agent);
 
     return {
-        user1: agent1,
-        emitterClientUser1,
-        listenerClientUser1,
-
-        user2: agent2,
-        emitterClientUser2,
-        listenerClientUser2,
-    };
-}
-
-export async function connectCanister<T>(name: string, canisterId: Principal, agent: HttpAgent): Promise<T> {
-    const {idlFactory} = await import(`dfx/${name}/${name}`)
-
-    return Actor.createActor(idlFactory, {
         agent,
-        canisterId
-    });
+        emitterService,
+        listenerService,
+    };
 }
 
 export async function deployCanister<T>(name: string, arg: number[], agent: HttpAgent): Promise<{ actor: T, canisterId: Principal }> {

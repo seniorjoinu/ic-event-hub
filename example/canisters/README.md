@@ -1,10 +1,9 @@
 ## IC Event Hub example
 
-The example consists of three following canisters:
+The example consists of the two following canisters:
 
-* [emitter-counter](emitter) - counter canister that emits an event each time it increments a value
-* [listener-counter-1](listener) - canister that completely mirrors the emitter by listening for all the emitted events
-* [listener-counter-2](listener-counter-2) - canister that only mirrors the emitter, when the increment was triggered by
-  some specified controller
+* [emitter](emitter) - a canister that receives messages from users, make batches of them and sends them to
+  the `listener` canister as events
+* [listener](listener) - a canister that receives batches of events from the `emitter`
 
-Execute the [e2e-test](../../example-e2e-test) locally to see how it works.
+Execute the [e2e-test](../e2e-test) locally to see how it works.
