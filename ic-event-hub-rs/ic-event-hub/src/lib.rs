@@ -1,4 +1,4 @@
-//! Accompanying library for [ic-event-hub-macros](https://crates.io/crates/ic-event-hub-macros)
+//! Accompanying library for [ic-event-hub-macros](https://crates.io/crates/ic-event-hub-macros).
 
 pub mod macros;
 

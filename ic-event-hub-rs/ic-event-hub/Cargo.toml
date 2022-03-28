@@ -1,6 +1,6 @@
 [package]
 name = "ic-event-hub"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Александр Втюрин <senior.joinu@gmail.com>"]
 edition = "2018"
 description = "Event-based pub/sub for IC canisters"
@@ -11,8 +11,8 @@ repository = "https://github.com/seniorjoinu/ic-event-hub"
 
 [dependencies]
 ic-cdk = "0.4.0"
-candid = "0.7.12"
-serde = "1.0.126"
-futures = "0.3.19"
+candid = "0.7.13"
+serde = "1.0.136"
+futures = "0.3.21"
 leb128 = "0.2.5"
-async-trait = "0.1.52"
+async-trait = "0.1.53"

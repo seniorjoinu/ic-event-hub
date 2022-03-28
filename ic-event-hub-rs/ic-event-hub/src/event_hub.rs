@@ -1,5 +1,5 @@
 use candid::ser::ValueSerializer;
-use candid::CandidType;
+use candid::{CandidType, Deserialize};
 use std::collections::{btree_map, hash_map, BinaryHeap};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
@@ -11,6 +11,7 @@ use crate::types::{
 };
 
 /// A struct that associates event topics with subscribed listeners
+#[derive(CandidType, Deserialize)]
 pub struct EventHub {
     pub(crate) batch_making_duration_nano: u64,
     pub(crate) batch_max_size_bytes: usize,

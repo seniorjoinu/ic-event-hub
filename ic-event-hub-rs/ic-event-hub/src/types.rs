@@ -1,6 +1,7 @@
 use std::cmp::{max, min, Ordering};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, BinaryHeap};
 
+use candid::types::{Serializer, Type};
 use candid::{decode_one, CandidType, Deserialize};
 use ic_cdk::export::Principal;
 
@@ -79,6 +80,7 @@ pub enum EventHubError {
     EventIsTooBig,
 }
 
+#[derive(CandidType, Deserialize)]
 pub struct EncodedEventBatch {
     pub content: Vec<u8>,
     pub events_count: usize,
@@ -100,7 +102,7 @@ impl EncodedEventBatch {
     }
 }
 
-#[derive(Eq)]
+#[derive(Eq, CandidType, Deserialize, Clone)]
 pub struct TimestampedRemoteCallEndpoint {
     pub timestamp: u64,
     pub endpoint: RemoteCallEndpoint,
@@ -192,4 +194,20 @@ pub struct GetSubscribersResponse {
 pub struct RemoteCallEndpoint {
     pub canister_id: Principal,
     pub method_name: String,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct EventQueue(pub BinaryHeap<TimestampedRemoteCallEndpoint>);
+
+impl CandidType for EventQueue {
+    fn _ty() -> Type {
+        Type::Vec(Box::new(TimestampedRemoteCallEndpoint::ty()))
+    }
+
+    fn idl_serialize<S>(&self, serializer: S) -> Result<(), S::Error>
+    where
+        S: Serializer,
+    {
+        self.clone().0.into_sorted_vec().idl_serialize(serializer)
+    }
 }

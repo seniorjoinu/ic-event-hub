@@ -14,6 +14,14 @@ macro_rules! implement_event_emitter {
             }
         }
 
+        pub fn _take_event_hub_state() -> Option<ic_event_hub::event_hub::EventHub> {
+            unsafe { _EVENT_HUB.take() }
+        }
+
+        pub fn _put_event_hub_state(state: Option<ic_event_hub::event_hub::EventHub>) {
+            unsafe { _EVENT_HUB = state }
+        }
+
         pub fn emit(event: impl ic_event_hub::types::IEvent) {
             ic_event_hub::fns::emit_impl(event, get_event_hub());
         }
