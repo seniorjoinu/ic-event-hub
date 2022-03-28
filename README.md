@@ -17,9 +17,9 @@ both: performance/price and overall application logic.
 
 ### Tutorials
 
-* [Introduction to ic-event-hub library]()
-* [Tutorial: Efficient canister networking with ic-event-hub]()
-* [Tutorial: Connecting a token with multiple ledgers using ic-event-hub]()
+* [Introduction to ic-event-hub library](https://dev.to/seniorjoinu/introduction-to-ic-event-hub-library-5366)
+* [Tutorial: Connecting A Token With Multiple Ledgers Using ic-event-hub](https://dev.to/seniorjoinu/tutorial-connecting-a-token-with-multiple-ledgers-using-ic-event-hub-1d4)
+* [Tutorial: Efficient Canister Networking With ic-event-hub](https://dev.to/seniorjoinu/tutorial-efficient-canister-networking-with-ic-event-hub-4idb)
 
 ### Installation
 
@@ -30,15 +30,6 @@ both: performance/price and overall application logic.
 ic-event-hub = "0.3"
 ic-event-hub-macros = "0.3"
 ```
-
-### Limitations
-
-Right now `ic-event-hub` doesn't support canister upgrades, so all your queued tasks will be lost. This is due to a
-limitation in `ic-cdk`, which doesn't support multiple stable variables at this moment. Once they do, I'll update this
-library, so it will handle canister upgrades gracefully.
-
-If you really want this functionality right now, you may try to serialize the state manually using `get_event_hub()`
-function.
 
 ### Contribution
 
