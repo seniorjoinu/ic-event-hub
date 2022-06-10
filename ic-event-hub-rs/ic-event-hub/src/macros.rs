@@ -22,8 +22,10 @@ macro_rules! implement_event_emitter {
             unsafe { _EVENT_HUB = state }
         }
 
-        pub fn emit(event: impl ic_event_hub::types::IEvent) {
-            ic_event_hub::fns::emit_impl(event, get_event_hub());
+        pub fn emit(
+            event: impl ic_event_hub::types::IEvent,
+        ) -> Result<(), ic_event_hub::types::EventHubError> {
+            ic_event_hub::fns::emit_impl(event, get_event_hub())
         }
 
         pub fn send_events() {

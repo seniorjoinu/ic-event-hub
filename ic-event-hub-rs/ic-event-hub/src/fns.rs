@@ -1,6 +1,6 @@
 use crate::event_hub::EventHub;
 use crate::types::{
-    Event, GetSubscribersRequest, GetSubscribersResponse, IEvent, SubscribeRequest,
+    Event, EventHubError, GetSubscribersRequest, GetSubscribersResponse, IEvent, SubscribeRequest,
     UnsubscribeRequest,
 };
 use candid::ser::TypeSerialize;
@@ -10,10 +10,10 @@ use ic_cdk::api::call::call_raw;
 use ic_cdk::api::time;
 use ic_cdk::{caller, id, print, trap};
 
-pub fn emit_impl(event: impl IEvent, hub: &mut EventHub) {
+pub fn emit_impl(event: impl IEvent, hub: &mut EventHub) -> Result<(), EventHubError> {
     print(format!("[Canister {}] - ic_event_hub.emit()", id()));
 
-    hub.push_pending_event(event.to_event(), time());
+    hub.push_pending_event(event.to_event(), time())
 }
 
 pub fn send_events_impl(hub: &mut EventHub) {
@@ -88,8 +88,7 @@ pub fn get_subscriers_impl(
 
 pub fn unsubscribe_impl(request: UnsubscribeRequest, hub: &mut EventHub) {
     for (idx, listener) in request.callbacks.into_iter().enumerate() {
-        let res =
-            hub.remove_event_listener(&listener.filter, listener.method_name, caller());
+        let res = hub.remove_event_listener(&listener.filter, listener.method_name, caller());
 
         if res.is_err() {
             trap(
